@@ -21,8 +21,7 @@ uv add <package-name>
 
 `uv sync` keeps the environment aligned with the project files, and `uv add` updates dependencies for you.
 
-4. Change python version
-uv python pin 3.12
+This project now prefers `faiss-gpu-cu12` on Linux and falls back to `faiss-cpu` on non-Linux platforms. That keeps `uv sync` working across your machine and a future CUDA setup.
 
 ## Project TODO
 
@@ -37,7 +36,7 @@ See [`PROJECT_TODO.md`](PROJECT_TODO.md) for the prioritized checklist.
 - `src/prompt/`: prompt assembly helpers and reusable templates
 - `src/generation/`: Ollama wrapper and generation controls
 - `src/memory/`: conversation state and history handling
-dul- `src/evaluation/`: quality and token-usage tracking
+- `src/evaluation/`: quality and token-usage tracking
 - `src/agent/`: optional LangGraph orchestration, tools, and HITL
 
 ### Project files

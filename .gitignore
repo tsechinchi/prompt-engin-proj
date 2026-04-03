@@ -1,0 +1,60 @@
+# Local environment and secrets
+.env
+.envrc
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Build and packaging artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+.Python
+MANIFEST
+
+# Test and coverage outputs
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# Notebook and IPython state
+.ipynb_checkpoints/
+profile_default/
+ipython_config.py
+
+# Tooling and editor state
+.idea/
+.vscode/
+.spyderproject
+.spyproject
+.ropeproject
+.pyre/
+.pytype/
+.dmypy.json
+dmypy.json
+.pdm-python
+.pdm-build/
+.pixi/
+.copilot/
+.claude/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Project-specific generated files
+prompt_engin_proj.egg-info/
