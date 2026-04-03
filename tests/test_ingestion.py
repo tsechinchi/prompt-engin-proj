@@ -23,13 +23,13 @@ class LoadDocumentsTests(unittest.TestCase):
 
             self.assertEqual(len(txt_docs), 1)
             self.assertEqual(txt_docs[0]["text"], "Line one. Line two.")
-            self.assertEqual(txt_docs[0]["metadata"]["source_type"], "text")
-            self.assertEqual(txt_docs[0]["metadata"]["source_name"], "notes.txt")
+            self.assertEqual(txt_docs[0]["metadata"]["source_type"], "text") #type: ignore
+            self.assertEqual(txt_docs[0]["metadata"]["source_name"], "notes.txt") #type: ignore
 
             self.assertEqual(len(md_docs), 1)
             self.assertEqual(md_docs[0]["text"], "# Title Bullet point")
-            self.assertEqual(md_docs[0]["metadata"]["source_type"], "markdown")
-            self.assertEqual(md_docs[0]["metadata"]["source_name"], "guide.md")
+            self.assertEqual(md_docs[0]["metadata"]["source_type"], "markdown") #type: ignore
+            self.assertEqual(md_docs[0]["metadata"]["source_name"], "guide.md") #type: ignore
 
     def test_load_directory_in_deterministic_order(self) -> None:
         with TemporaryDirectory() as tmpdir:
@@ -45,7 +45,7 @@ class LoadDocumentsTests(unittest.TestCase):
 
             self.assertEqual([doc["text"] for doc in docs], ["alpha", "beta", "zeta"])
             self.assertEqual(
-                [doc["metadata"]["source_name"] for doc in docs],
+                [doc["metadata"]["source_name"] for doc in docs], #type: ignore
                 ["alpha.txt", "beta.txt", "zeta.md"],
             )
 
@@ -74,10 +74,10 @@ class LoadDocumentsTests(unittest.TestCase):
 
             self.assertEqual(len(docs), 2)
             self.assertEqual(docs[0]["text"], "Page one text")
-            self.assertEqual(docs[0]["metadata"]["page_number"], 1)
+            self.assertEqual(docs[0]["metadata"]["page_number"], 1) #type: ignore
             self.assertEqual(docs[1]["text"], "Page three text")
-            self.assertEqual(docs[1]["metadata"]["page_number"], 3)
-            self.assertEqual(docs[0]["metadata"]["source_type"], "pdf")
+            self.assertEqual(docs[1]["metadata"]["page_number"], 3) #type: ignore
+            self.assertEqual(docs[0]["metadata"]["source_type"], "pdf") #type: ignore
 
 
 class ChunkingTests(unittest.TestCase):
@@ -126,16 +126,16 @@ class ChunkingTests(unittest.TestCase):
             }
         ]
 
-        chunks = chunk_documents(documents, window_tokens=8, stride_tokens=4)
+        chunks = chunk_documents(documents, window_tokens=8, stride_tokens=4) #type: ignore
 
         self.assertGreaterEqual(len(chunks), 2)
         for index, chunk in enumerate(chunks):
-            self.assertEqual(chunk["metadata"]["source_path"], "/tmp/doc.txt")
-            self.assertEqual(chunk["metadata"]["source_name"], "doc.txt")
-            self.assertEqual(chunk["metadata"]["document_id"], "doc-1")
-            self.assertEqual(chunk["metadata"]["chunk_index"], index)
-            self.assertEqual(chunk["metadata"]["chunk_id"], f"doc-1:{index}")
-            self.assertEqual(chunk["metadata"]["token_count"], _count_tokens(chunk["text"]))
+            self.assertEqual(chunk["metadata"]["source_path"], "/tmp/doc.txt") #type: ignore
+            self.assertEqual(chunk["metadata"]["source_name"], "doc.txt") #type: ignore
+            self.assertEqual(chunk["metadata"]["document_id"], "doc-1") #type: ignore
+            self.assertEqual(chunk["metadata"]["chunk_index"], index) #type: ignore
+            self.assertEqual(chunk["metadata"]["chunk_id"], f"doc-1:{index}") #type: ignore
+            self.assertEqual(chunk["metadata"]["token_count"], _count_tokens(chunk["text"])) #type: ignore
 
 
 if __name__ == "__main__":
