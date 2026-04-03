@@ -1,0 +1,7 @@
+[project]
+name = "prompt-engin-proj"
+version = "0.1.0"
+description = "HKBU study companion skeleton for prompt engineering and RAG workflows"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
