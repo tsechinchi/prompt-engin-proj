@@ -21,11 +21,11 @@
 - [ ] 02_rag_pipeline.ipynb — BM25-only, vector-only, hybrid; cite retrieved snippets
 - [ ] 03_evaluation.ipynb — No-RAG vs RAG, lexical vs neural, token usage charts
 
-### Advanced (Optional +20%)
+### Advanced (Optional +20%) [finished]
 - [ ] tools.py — Playwright headless browser for live HKBU timetable/news
 - [ ] quality_eval.py — BLEU/ROUGE or LLM-as-judge + token_tracker.py
 
-### Maybe needed
+### Maybe needed [finished]
 - [ ] file upload module
 
 ### Report Workflow
