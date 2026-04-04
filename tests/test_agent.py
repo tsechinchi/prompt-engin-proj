@@ -5,6 +5,17 @@ import unittest
 from src.agent import approve_output, build_graph, review_output
 
 
+class _StaticRetriever:
+    def __init__(self, hits: list[tuple[str, float]]) -> None:
+        self._hits = hits
+
+    def build(self, _documents: list[str]) -> None:
+        return
+
+    def query(self, _query: str, *, top_k: int = 5) -> list[tuple[str, float]]:
+        return self._hits[:top_k]
+
+
 class HITLTests(unittest.TestCase):
     def test_review_output_accepts_approve(self) -> None:
         answers = iter(["a", "looks good"])
@@ -110,6 +121,64 @@ class GraphTests(unittest.TestCase):
         self.assertEqual(result["status"], "rejected")
         self.assertEqual(result["final_output"], "candidate answer")
         self.assertEqual(result["hitl_decision"]["feedback"], "Insufficient support.")
+
+    def test_graph_abstains_on_retrieval_mismatch(self) -> None:
+        generated_prompts: list[str] = []
+        hitl_calls = {"count": 0}
+
+        def fake_generate(_prompt: str, **_kwargs) -> str:
+            generated_prompts.append(_prompt)
+            return "should not be generated"
+
+        def fake_hitl(_text: str) -> dict[str, str]:
+            hitl_calls["count"] += 1
+            return {"action": "approve", "feedback": "Escalated abstention acknowledged."}
+
+        graph = build_graph(
+            generate_fn=fake_generate,
+            hitl_fn=fake_hitl,
+        )
+
+        result = graph.invoke(
+            {
+                "query": "What are campus parking permit rules for motorcycles?",
+                "chunk_records": [
+                    {"text": "The add/drop deadline is September 10.", "metadata": {"document_id": "doc-1"}},
+                    {"text": "Tuition payment is due in October.", "metadata": {"document_id": "doc-2"}},
+                ],
+                "require_approval": True,
+            }
+        )
+
+        self.assertEqual(result["status"], "abstained")
+        self.assertTrue(result.get("retrieval_mismatch"))
+        self.assertIn("enough relevant context", result["final_output"].lower())
+        self.assertEqual(len(generated_prompts), 2)
+        self.assertIn("Retrieval context appears insufficient", generated_prompts[1])
+        self.assertEqual(hitl_calls["count"], 1)
+
+    def test_graph_does_not_false_abstain_for_course_code_query(self) -> None:
+        graph = build_graph(
+            generate_fn=lambda _prompt, **_kwargs: "The CS101 exam date is Dec 10.",
+            hitl_fn=lambda _text: {"action": "approve", "feedback": ""},
+        )
+
+        retriever_hits = [("CS101 exam date is Dec 10 and assignment deadline is Nov 1.", 1.0)]
+        result = graph.invoke(
+            {
+                "query": "CS101?",
+                "chunk_records": [
+                    {"text": "placeholder", "metadata": {"document_id": "doc-1"}},
+                ],
+                "bm25_retriever": _StaticRetriever(retriever_hits),
+                "vector_retriever": _StaticRetriever(retriever_hits),
+                "require_approval": True,
+                "top_k": 1,
+            }
+        )
+
+        self.assertEqual(result["status"], "approved")
+        self.assertFalse(result.get("retrieval_mismatch", False))
 
 
 if __name__ == "__main__":

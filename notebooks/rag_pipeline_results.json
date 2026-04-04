@@ -1,0 +1,328 @@
+{
+  "bm25": [
+    {
+      "query": "What is the assessment weighting for CS101 (coursework, midterm, final)?",
+      "hits": [
+        [
+          "CS101 FAQ Q: How do I contact the convenor? A: Email Dr. Alice Wong at alice.wong@hkbu.edu.hk or visit office hours Tue 14:00–15:00. Q: Where can I submit assignments? A: Submit via the LMS assignment link before the deadline; late submissions may incur penalties. Q: Who do I contact for lab issues? A: Contact the TA for your lab group (see course announcements) or email cs-office@hkbu.edu.hk.",
+          3.523628061417449
+        ],
+        [
+          "Course: CS101 — Introduction to Programming Assessment: - Coursework 40% (Assignment 1: 15%, Assignment 2: 25%) - Midterm 20% - Final exam 40% Important dates: - Assignment 1 due: 2026-03-15 - Assignment 2 due: 2026-04-20 - Midterm: 2026-04-01 - Final exam period: 2026-05-10 to 2026-05-20 Learning outcomes: - Write basic Python programs - Understand control flow, data structures, and functions Course Convenor: Dr. Alice Wong <alice.wong@hkbu.edu.hk> Office hours: Tue 14:00–15:00, Room A105",
+          2.190948996031297
+        ],
+        [
+          "CS101 Timetable — Term 2 2026 Lectures: - Mon 10:00–11:30 — Room A201 - Wed 10:00–11:30 — Room A201 Labs: - Lab Group 1: Fri 09:00–11:00 — Lab B - Lab Group 2: Fri 11:00–13:00 — Lab B Assessment & key dates: - Midterm exam: 2026-04-01 - Final exam period: 2026-05-10 to 2026-05-20",
+          1.0864966217944847
+        ]
+      ],
+      "prompt_tokens": 402,
+      "response_tokens": 51,
+      "response": "Extractive fallback summary from retrieved snippets:\n- [2] Course: CS101 — Introduction to Programming Assessment:\n- [2] Coursework 40% (Assignment 1: 15%, Assignment 2: 25%)\n- [2] Final exam 40% Important dates:"
+    },
+    {
+      "query": "When are the CS101 assignment deadlines and exam dates?",
+      "hits": [
+        [
+          "CS101 FAQ Q: How do I contact the convenor? A: Email Dr. Alice Wong at alice.wong@hkbu.edu.hk or visit office hours Tue 14:00–15:00. Q: Where can I submit assignments? A: Submit via the LMS assignment link before the deadline; late submissions may incur penalties. Q: Who do I contact for lab issues? A: Contact the TA for your lab group (see course announcements) or email cs-office@hkbu.edu.hk.",
+          2.377212855647315
+        ],
+        [
+          "Course: CS101 — Introduction to Programming Assessment: - Coursework 40% (Assignment 1: 15%, Assignment 2: 25%) - Midterm 20% - Final exam 40% Important dates: - Assignment 1 due: 2026-03-15 - Assignment 2 due: 2026-04-20 - Midterm: 2026-04-01 - Final exam period: 2026-05-10 to 2026-05-20 Learning outcomes: - Write basic Python programs - Understand control flow, data structures, and functions Course Convenor: Dr. Alice Wong <alice.wong@hkbu.edu.hk> Office hours: Tue 14:00–15:00, Room A105",
+          1.4862212815293188
+        ],
+        [
+          "Academic Accommodation Policy (excerpt) Students with documented disabilities or temporary medical conditions may request accommodations. Common accommodations include extra exam time, alternative assessment formats, and note-taking support. To apply: contact Student Affairs with supporting documentation at least 2 weeks before assessment dates.",
+          0.8494998057884471
+        ]
+      ],
+      "prompt_tokens": 353,
+      "response_tokens": 53,
+      "response": "Extractive fallback summary from retrieved snippets:\n- [2] Final exam 40% Important dates:\n- [1] A: Submit via the LMS assignment link before the deadline\n- [2] Coursework 40% (Assignment 1: 15%, Assignment 2: 25%)"
+    },
+    {
+      "query": "Who is the course convenor for CS101 and how can I contact them?",
+      "hits": [
+        [
+          "CS101 FAQ Q: How do I contact the convenor? A: Email Dr. Alice Wong at alice.wong@hkbu.edu.hk or visit office hours Tue 14:00–15:00. Q: Where can I submit assignments? A: Submit via the LMS assignment link before the deadline; late submissions may incur penalties. Q: Who do I contact for lab issues? A: Contact the TA for your lab group (see course announcements) or email cs-office@hkbu.edu.hk.",
+          9.077008686969387
+        ],
+        [
+          "Course: CS101 — Introduction to Programming Assessment: - Coursework 40% (Assignment 1: 15%, Assignment 2: 25%) - Midterm 20% - Final exam 40% Important dates: - Assignment 1 due: 2026-03-15 - Assignment 2 due: 2026-04-20 - Midterm: 2026-04-01 - Final exam period: 2026-05-10 to 2026-05-20 Learning outcomes: - Write basic Python programs - Understand control flow, data structures, and functions Course Convenor: Dr. Alice Wong <alice.wong@hkbu.edu.hk> Office hours: Tue 14:00–15:00, Room A105",
+          0.9111856919027176
+        ],
+        [
+          "Department of Computer Science — Contacts Head of Department: Prof. John Lee <john.lee@hkbu.edu.hk> Administrative Office: cs-office@hkbu.edu.hk Course Convenor (CS101): Dr. Alice Wong — alice.wong@hkbu.edu.hk Teaching Assistant (CS101): Bob Chan — bob.chan@hkbu.edu.hk",
+          0.7751870463855492
+        ]
+      ],
+      "prompt_tokens": 380,
+      "response_tokens": 65,
+      "response": "Extractive fallback summary from retrieved snippets:\n- [1] CS101 FAQ Q: How do I contact the convenor?\n- [1] Q: Who do I contact for lab issues?\n- [1] A: Contact the TA for your lab group (see course announcements) or email cs-office@hkbu.edu.hk"
+    },
+    {
+      "query": "Where and when are CS101 lab sessions held?",
+      "hits": [
+        [
+          "CS101 FAQ Q: How do I contact the convenor? A: Email Dr. Alice Wong at alice.wong@hkbu.edu.hk or visit office hours Tue 14:00–15:00. Q: Where can I submit assignments? A: Submit via the LMS assignment link before the deadline; late submissions may incur penalties. Q: Who do I contact for lab issues? A: Contact the TA for your lab group (see course announcements) or email cs-office@hkbu.edu.hk.",
+          1.6064199539835602
+        ],
+        [
+          "CS101 Timetable — Term 2 2026 Lectures: - Mon 10:00–11:30 — Room A201 - Wed 10:00–11:30 — Room A201 Labs: - Lab Group 1: Fri 09:00–11:00 — Lab B - Lab Group 2: Fri 11:00–13:00 — Lab B Assessment & key dates: - Midterm exam: 2026-04-01 - Final exam period: 2026-05-10 to 2026-05-20",
+          0.818002852684617
+        ],
+        [
+          "Course: CS101 — Introduction to Programming Assessment: - Coursework 40% (Assignment 1: 15%, Assignment 2: 25%) - Midterm 20% - Final exam 40% Important dates: - Assignment 1 due: 2026-03-15 - Assignment 2 due: 2026-04-20 - Midterm: 2026-04-01 - Final exam period: 2026-05-10 to 2026-05-20 Learning outcomes: - Write basic Python programs - Understand control flow, data structures, and functions Course Convenor: Dr. Alice Wong <alice.wong@hkbu.edu.hk> Office hours: Tue 14:00–15:00, Room A105",
+          0.4720389488512886
+        ]
+      ],
+      "prompt_tokens": 396,
+      "response_tokens": 69,
+      "response": "Extractive fallback summary from retrieved snippets:\n- [1] Q: Who do I contact for lab issues?\n- [1] A: Contact the TA for your lab group (see course announcements) or email cs-office@hkbu.edu.hk\n- [2] Lab Group 1: Fri 09:00–11:00 — Lab B"
+    },
+    {
+      "query": "How to request academic accommodation for assessments?",
+      "hits": [
+        [
+          "Academic Accommodation Policy (excerpt) Students with documented disabilities or temporary medical conditions may request accommodations. Common accommodations include extra exam time, alternative assessment formats, and note-taking support. To apply: contact Student Affairs with supporting documentation at least 2 weeks before assessment dates.",
+          4.013799941231282
+        ],
+        [
+          "CS101 FAQ Q: How do I contact the convenor? A: Email Dr. Alice Wong at alice.wong@hkbu.edu.hk or visit office hours Tue 14:00–15:00. Q: Where can I submit assignments? A: Submit via the LMS assignment link before the deadline; late submissions may incur penalties. Q: Who do I contact for lab issues? A: Contact the TA for your lab group (see course announcements) or email cs-office@hkbu.edu.hk.",
+          2.429910799625686
+        ],
+        [
+          "Course: CS101 — Introduction to Programming Assessment: - Coursework 40% (Assignment 1: 15%, Assignment 2: 25%) - Midterm 20% - Final exam 40% Important dates: - Assignment 1 due: 2026-03-15 - Assignment 2 due: 2026-04-20 - Midterm: 2026-04-01 - Final exam period: 2026-05-10 to 2026-05-20 Learning outcomes: - Write basic Python programs - Understand control flow, data structures, and functions Course Convenor: Dr. Alice Wong <alice.wong@hkbu.edu.hk> Office hours: Tue 14:00–15:00, Room A105",
+          0.2621213194637148
+        ]
+      ],
+      "prompt_tokens": 351,
+      "response_tokens": 28,
+      "response": "Extractive fallback summary from retrieved snippets:\n- [1] Academic Accommodation Policy (excerpt) Students with documented disabilities or temporary medical conditions may request accommodations"
+    }
+  ],
+  "vector": [
+    {
+      "query": "What is the assessment weighting for CS101 (coursework, midterm, final)?",
+      "hits": [
+        [
+          "Course: CS101 — Introduction to Programming Assessment: - Coursework 40% (Assignment 1: 15%, Assignment 2: 25%) - Midterm 20% - Final exam 40% Important dates: - Assignment 1 due: 2026-03-15 - Assignment 2 due: 2026-04-20 - Midterm: 2026-04-01 - Final exam period: 2026-05-10 to 2026-05-20 Learning outcomes: - Write basic Python programs - Understand control flow, data structures, and functions Course Convenor: Dr. Alice Wong <alice.wong@hkbu.edu.hk> Office hours: Tue 14:00–15:00, Room A105",
+          0.5169685482978821
+        ],
+        [
+          "CS101 Timetable — Term 2 2026 Lectures: - Mon 10:00–11:30 — Room A201 - Wed 10:00–11:30 — Room A201 Labs: - Lab Group 1: Fri 09:00–11:00 — Lab B - Lab Group 2: Fri 11:00–13:00 — Lab B Assessment & key dates: - Midterm exam: 2026-04-01 - Final exam period: 2026-05-10 to 2026-05-20",
+          0.5125041007995605
+        ],
+        [
+          "Department of Computer Science — Contacts Head of Department: Prof. John Lee <john.lee@hkbu.edu.hk> Administrative Office: cs-office@hkbu.edu.hk Course Convenor (CS101): Dr. Alice Wong — alice.wong@hkbu.edu.hk Teaching Assistant (CS101): Bob Chan — bob.chan@hkbu.edu.hk",
+          0.3917660713195801
+        ]
+      ],
+      "prompt_tokens": 374,
+      "response_tokens": 51,
+      "response": "Extractive fallback summary from retrieved snippets:\n- [1] Course: CS101 — Introduction to Programming Assessment:\n- [1] Coursework 40% (Assignment 1: 15%, Assignment 2: 25%)\n- [1] Final exam 40% Important dates:"
+    },
+    {
+      "query": "When are the CS101 assignment deadlines and exam dates?",
+      "hits": [
+        [
+          "CS101 Timetable — Term 2 2026 Lectures: - Mon 10:00–11:30 — Room A201 - Wed 10:00–11:30 — Room A201 Labs: - Lab Group 1: Fri 09:00–11:00 — Lab B - Lab Group 2: Fri 11:00–13:00 — Lab B Assessment & key dates: - Midterm exam: 2026-04-01 - Final exam period: 2026-05-10 to 2026-05-20",
+          0.685050368309021
+        ],
+        [
+          "CS101 FAQ Q: How do I contact the convenor? A: Email Dr. Alice Wong at alice.wong@hkbu.edu.hk or visit office hours Tue 14:00–15:00. Q: Where can I submit assignments? A: Submit via the LMS assignment link before the deadline; late submissions may incur penalties. Q: Who do I contact for lab issues? A: Contact the TA for your lab group (see course announcements) or email cs-office@hkbu.edu.hk.",
+          0.5514862537384033
+        ],
+        [
+          "Course: CS101 — Introduction to Programming Assessment: - Coursework 40% (Assignment 1: 15%, Assignment 2: 25%) - Midterm 20% - Final exam 40% Important dates: - Assignment 1 due: 2026-03-15 - Assignment 2 due: 2026-04-20 - Midterm: 2026-04-01 - Final exam period: 2026-05-10 to 2026-05-20 Learning outcomes: - Write basic Python programs - Understand control flow, data structures, and functions Course Convenor: Dr. Alice Wong <alice.wong@hkbu.edu.hk> Office hours: Tue 14:00–15:00, Room A105",
+          0.4798200726509094
+        ]
+      ],
+      "prompt_tokens": 397,
+      "response_tokens": 54,
+      "response": "Extractive fallback summary from retrieved snippets:\n- [3] Final exam 40% Important dates:\n- [1] Lab Group 2: Fri 11:00–13:00 — Lab B Assessment & key dates:\n- [1] Midterm exam: 2026-04-01"
+    },
+    {
+      "query": "Who is the course convenor for CS101 and how can I contact them?",
+      "hits": [
+        [
+          "CS101 FAQ Q: How do I contact the convenor? A: Email Dr. Alice Wong at alice.wong@hkbu.edu.hk or visit office hours Tue 14:00–15:00. Q: Where can I submit assignments? A: Submit via the LMS assignment link before the deadline; late submissions may incur penalties. Q: Who do I contact for lab issues? A: Contact the TA for your lab group (see course announcements) or email cs-office@hkbu.edu.hk.",
+          0.7130204439163208
+        ],
+        [
+          "Department of Computer Science — Contacts Head of Department: Prof. John Lee <john.lee@hkbu.edu.hk> Administrative Office: cs-office@hkbu.edu.hk Course Convenor (CS101): Dr. Alice Wong — alice.wong@hkbu.edu.hk Teaching Assistant (CS101): Bob Chan — bob.chan@hkbu.edu.hk",
+          0.6277834177017212
+        ],
+        [
+          "CS101 Timetable — Term 2 2026 Lectures: - Mon 10:00–11:30 — Room A201 - Wed 10:00–11:30 — Room A201 Labs: - Lab Group 1: Fri 09:00–11:00 — Lab B - Lab Group 2: Fri 11:00–13:00 — Lab B Assessment & key dates: - Midterm exam: 2026-04-01 - Final exam period: 2026-05-10 to 2026-05-20",
+          0.5744348764419556
+        ]
+      ],
+      "prompt_tokens": 375,
+      "response_tokens": 65,
+      "response": "Extractive fallback summary from retrieved snippets:\n- [1] CS101 FAQ Q: How do I contact the convenor?\n- [1] Q: Who do I contact for lab issues?\n- [1] A: Contact the TA for your lab group (see course announcements) or email cs-office@hkbu.edu.hk"
+    },
+    {
+      "query": "Where and when are CS101 lab sessions held?",
+      "hits": [
+        [
+          "CS101 Timetable — Term 2 2026 Lectures: - Mon 10:00–11:30 — Room A201 - Wed 10:00–11:30 — Room A201 Labs: - Lab Group 1: Fri 09:00–11:00 — Lab B - Lab Group 2: Fri 11:00–13:00 — Lab B Assessment & key dates: - Midterm exam: 2026-04-01 - Final exam period: 2026-05-10 to 2026-05-20",
+          0.7101931571960449
+        ],
+        [
+          "CS101 FAQ Q: How do I contact the convenor? A: Email Dr. Alice Wong at alice.wong@hkbu.edu.hk or visit office hours Tue 14:00–15:00. Q: Where can I submit assignments? A: Submit via the LMS assignment link before the deadline; late submissions may incur penalties. Q: Who do I contact for lab issues? A: Contact the TA for your lab group (see course announcements) or email cs-office@hkbu.edu.hk.",
+          0.579118549823761
+        ],
+        [
+          "Department of Computer Science — Contacts Head of Department: Prof. John Lee <john.lee@hkbu.edu.hk> Administrative Office: cs-office@hkbu.edu.hk Course Convenor (CS101): Dr. Alice Wong — alice.wong@hkbu.edu.hk Teaching Assistant (CS101): Bob Chan — bob.chan@hkbu.edu.hk",
+          0.35854220390319824
+        ]
+      ],
+      "prompt_tokens": 370,
+      "response_tokens": 64,
+      "response": "Extractive fallback summary from retrieved snippets:\n- [1] Lab Group 1: Fri 09:00–11:00 — Lab B\n- [1] Lab Group 2: Fri 11:00–13:00 — Lab B Assessment & key dates:\n- [2] Q: Who do I contact for lab issues?"
+    },
+    {
+      "query": "How to request academic accommodation for assessments?",
+      "hits": [
+        [
+          "Academic Accommodation Policy (excerpt) Students with documented disabilities or temporary medical conditions may request accommodations. Common accommodations include extra exam time, alternative assessment formats, and note-taking support. To apply: contact Student Affairs with supporting documentation at least 2 weeks before assessment dates.",
+          0.6968872547149658
+        ],
+        [
+          "CS101 Timetable — Term 2 2026 Lectures: - Mon 10:00–11:30 — Room A201 - Wed 10:00–11:30 — Room A201 Labs: - Lab Group 1: Fri 09:00–11:00 — Lab B - Lab Group 2: Fri 11:00–13:00 — Lab B Assessment & key dates: - Midterm exam: 2026-04-01 - Final exam period: 2026-05-10 to 2026-05-20",
+          0.39807724952697754
+        ],
+        [
+          "CS101 FAQ Q: How do I contact the convenor? A: Email Dr. Alice Wong at alice.wong@hkbu.edu.hk or visit office hours Tue 14:00–15:00. Q: Where can I submit assignments? A: Submit via the LMS assignment link before the deadline; late submissions may incur penalties. Q: Who do I contact for lab issues? A: Contact the TA for your lab group (see course announcements) or email cs-office@hkbu.edu.hk.",
+          0.37817806005477905
+        ]
+      ],
+      "prompt_tokens": 346,
+      "response_tokens": 28,
+      "response": "Extractive fallback summary from retrieved snippets:\n- [1] Academic Accommodation Policy (excerpt) Students with documented disabilities or temporary medical conditions may request accommodations"
+    }
+  ],
+  "hybrid": [
+    {
+      "query": "What is the assessment weighting for CS101 (coursework, midterm, final)?",
+      "hits": [
+        [
+          "Course: CS101 — Introduction to Programming Assessment: - Coursework 40% (Assignment 1: 15%, Assignment 2: 25%) - Midterm 20% - Final exam 40% Important dates: - Assignment 1 due: 2026-03-15 - Assignment 2 due: 2026-04-20 - Midterm: 2026-04-01 - Final exam period: 2026-05-10 to 2026-05-20 Learning outcomes: - Write basic Python programs - Understand control flow, data structures, and functions Course Convenor: Dr. Alice Wong <alice.wong@hkbu.edu.hk> Office hours: Tue 14:00–15:00, Room A105",
+          0.7812708754695112
+        ],
+        [
+          "CS101 Timetable — Term 2 2026 Lectures: - Mon 10:00–11:30 — Room A201 - Wed 10:00–11:30 — Room A201 Labs: - Lab Group 1: Fri 09:00–11:00 — Lab B - Lab Group 2: Fri 11:00–13:00 — Lab B Assessment & key dates: - Midterm exam: 2026-04-01 - Final exam period: 2026-05-10 to 2026-05-20",
+          0.5786053074696186
+        ],
+        [
+          "CS101 FAQ Q: How do I contact the convenor? A: Email Dr. Alice Wong at alice.wong@hkbu.edu.hk or visit office hours Tue 14:00–15:00. Q: Where can I submit assignments? A: Submit via the LMS assignment link before the deadline; late submissions may incur penalties. Q: Who do I contact for lab issues? A: Contact the TA for your lab group (see course announcements) or email cs-office@hkbu.edu.hk.",
+          0.4
+        ],
+        [
+          "Department of Computer Science — Contacts Head of Department: Prof. John Lee <john.lee@hkbu.edu.hk> Administrative Office: cs-office@hkbu.edu.hk Course Convenor (CS101): Dr. Alice Wong — alice.wong@hkbu.edu.hk Teaching Assistant (CS101): Bob Chan — bob.chan@hkbu.edu.hk",
+          0.0
+        ]
+      ],
+      "prompt_tokens": 481,
+      "response_tokens": 51,
+      "response": "Extractive fallback summary from retrieved snippets:\n- [1] Course: CS101 — Introduction to Programming Assessment:\n- [1] Coursework 40% (Assignment 1: 15%, Assignment 2: 25%)\n- [1] Final exam 40% Important dates:"
+    },
+    {
+      "query": "When are the CS101 assignment deadlines and exam dates?",
+      "hits": [
+        [
+          "CS101 FAQ Q: How do I contact the convenor? A: Email Dr. Alice Wong at alice.wong@hkbu.edu.hk or visit office hours Tue 14:00–15:00. Q: Where can I submit assignments? A: Submit via the LMS assignment link before the deadline; late submissions may incur penalties. Q: Who do I contact for lab issues? A: Contact the TA for your lab group (see course announcements) or email cs-office@hkbu.edu.hk.",
+          0.6095193037392909
+        ],
+        [
+          "CS101 Timetable — Term 2 2026 Lectures: - Mon 10:00–11:30 — Room A201 - Wed 10:00–11:30 — Room A201 Labs: - Lab Group 1: Fri 09:00–11:00 — Lab B - Lab Group 2: Fri 11:00–13:00 — Lab B Assessment & key dates: - Midterm exam: 2026-04-01 - Final exam period: 2026-05-10 to 2026-05-20",
+          0.6
+        ],
+        [
+          "Course: CS101 — Introduction to Programming Assessment: - Coursework 40% (Assignment 1: 15%, Assignment 2: 25%) - Midterm 20% - Final exam 40% Important dates: - Assignment 1 due: 2026-03-15 - Assignment 2 due: 2026-04-20 - Midterm: 2026-04-01 - Final exam period: 2026-05-10 to 2026-05-20 Learning outcomes: - Write basic Python programs - Understand control flow, data structures, and functions Course Convenor: Dr. Alice Wong <alice.wong@hkbu.edu.hk> Office hours: Tue 14:00–15:00, Room A105",
+          0.16671232226488944
+        ],
+        [
+          "Academic Accommodation Policy (excerpt) Students with documented disabilities or temporary medical conditions may request accommodations. Common accommodations include extra exam time, alternative assessment formats, and note-taking support. To apply: contact Student Affairs with supporting documentation at least 2 weeks before assessment dates.",
+          0.0
+        ]
+      ],
+      "prompt_tokens": 453,
+      "response_tokens": 47,
+      "response": "- Midterm: 2026-04-01 [3]\n- Assignment 1 due: 2026-03-15 [3]\n- Final exam period: 2026-05-10 to 2026-05-20 [2], [3]"
+    },
+    {
+      "query": "Who is the course convenor for CS101 and how can I contact them?",
+      "hits": [
+        [
+          "CS101 FAQ Q: How do I contact the convenor? A: Email Dr. Alice Wong at alice.wong@hkbu.edu.hk or visit office hours Tue 14:00–15:00. Q: Where can I submit assignments? A: Submit via the LMS assignment link before the deadline; late submissions may incur penalties. Q: Who do I contact for lab issues? A: Contact the TA for your lab group (see course announcements) or email cs-office@hkbu.edu.hk.",
+          1.0
+        ],
+        [
+          "Department of Computer Science — Contacts Head of Department: Prof. John Lee <john.lee@hkbu.edu.hk> Administrative Office: cs-office@hkbu.edu.hk Course Convenor (CS101): Dr. Alice Wong — alice.wong@hkbu.edu.hk Teaching Assistant (CS101): Bob Chan — bob.chan@hkbu.edu.hk",
+          0.2309701171572591
+        ],
+        [
+          "Course: CS101 — Introduction to Programming Assessment: - Coursework 40% (Assignment 1: 15%, Assignment 2: 25%) - Midterm 20% - Final exam 40% Important dates: - Assignment 1 due: 2026-03-15 - Assignment 2 due: 2026-04-20 - Midterm: 2026-04-01 - Final exam period: 2026-05-10 to 2026-05-20 Learning outcomes: - Write basic Python programs - Understand control flow, data structures, and functions Course Convenor: Dr. Alice Wong <alice.wong@hkbu.edu.hk> Office hours: Tue 14:00–15:00, Room A105",
+          0.006552713435920264
+        ],
+        [
+          "CS101 Timetable — Term 2 2026 Lectures: - Mon 10:00–11:30 — Room A201 - Wed 10:00–11:30 — Room A201 Labs: - Lab Group 1: Fri 09:00–11:00 — Lab B - Lab Group 2: Fri 11:00–13:00 — Lab B Assessment & key dates: - Midterm exam: 2026-04-01 - Final exam period: 2026-05-10 to 2026-05-20",
+          0.0
+        ]
+      ],
+      "prompt_tokens": 480,
+      "response_tokens": 65,
+      "response": "Extractive fallback summary from retrieved snippets:\n- [1] CS101 FAQ Q: How do I contact the convenor?\n- [1] Q: Who do I contact for lab issues?\n- [1] A: Contact the TA for your lab group (see course announcements) or email cs-office@hkbu.edu.hk"
+    },
+    {
+      "query": "Where and when are CS101 lab sessions held?",
+      "hits": [
+        [
+          "CS101 FAQ Q: How do I contact the convenor? A: Email Dr. Alice Wong at alice.wong@hkbu.edu.hk or visit office hours Tue 14:00–15:00. Q: Where can I submit assignments? A: Submit via the LMS assignment link before the deadline; late submissions may incur penalties. Q: Who do I contact for lab issues? A: Contact the TA for your lab group (see course announcements) or email cs-office@hkbu.edu.hk.",
+          0.7763556057876606
+        ],
+        [
+          "CS101 Timetable — Term 2 2026 Lectures: - Mon 10:00–11:30 — Room A201 - Wed 10:00–11:30 — Room A201 Labs: - Lab Group 1: Fri 09:00–11:00 — Lab B - Lab Group 2: Fri 11:00–13:00 — Lab B Assessment & key dates: - Midterm exam: 2026-04-01 - Final exam period: 2026-05-10 to 2026-05-20",
+          0.7219921357173953
+        ],
+        [
+          "Course: CS101 — Introduction to Programming Assessment: - Coursework 40% (Assignment 1: 15%, Assignment 2: 25%) - Midterm 20% - Final exam 40% Important dates: - Assignment 1 due: 2026-03-15 - Assignment 2 due: 2026-04-20 - Midterm: 2026-04-01 - Final exam period: 2026-05-10 to 2026-05-20 Learning outcomes: - Write basic Python programs - Understand control flow, data structures, and functions Course Convenor: Dr. Alice Wong <alice.wong@hkbu.edu.hk> Office hours: Tue 14:00–15:00, Room A105",
+          0.0
+        ],
+        [
+          "Department of Computer Science — Contacts Head of Department: Prof. John Lee <john.lee@hkbu.edu.hk> Administrative Office: cs-office@hkbu.edu.hk Course Convenor (CS101): Dr. Alice Wong — alice.wong@hkbu.edu.hk Teaching Assistant (CS101): Bob Chan — bob.chan@hkbu.edu.hk",
+          0.0
+        ]
+      ],
+      "prompt_tokens": 475,
+      "response_tokens": 69,
+      "response": "Extractive fallback summary from retrieved snippets:\n- [1] Q: Who do I contact for lab issues?\n- [1] A: Contact the TA for your lab group (see course announcements) or email cs-office@hkbu.edu.hk\n- [2] Lab Group 1: Fri 09:00–11:00 — Lab B"
+    },
+    {
+      "query": "How to request academic accommodation for assessments?",
+      "hits": [
+        [
+          "Academic Accommodation Policy (excerpt) Students with documented disabilities or temporary medical conditions may request accommodations. Common accommodations include extra exam time, alternative assessment formats, and note-taking support. To apply: contact Student Affairs with supporting documentation at least 2 weeks before assessment dates.",
+          1.0
+        ],
+        [
+          "CS101 FAQ Q: How do I contact the convenor? A: Email Dr. Alice Wong at alice.wong@hkbu.edu.hk or visit office hours Tue 14:00–15:00. Q: Where can I submit assignments? A: Submit via the LMS assignment link before the deadline; late submissions may incur penalties. Q: Who do I contact for lab issues? A: Contact the TA for your lab group (see course announcements) or email cs-office@hkbu.edu.hk.",
+          0.23112741774674062
+        ],
+        [
+          "CS101 Timetable — Term 2 2026 Lectures: - Mon 10:00–11:30 — Room A201 - Wed 10:00–11:30 — Room A201 Labs: - Lab Group 1: Fri 09:00–11:00 — Lab B - Lab Group 2: Fri 11:00–13:00 — Lab B Assessment & key dates: - Midterm exam: 2026-04-01 - Final exam period: 2026-05-10 to 2026-05-20",
+          0.0374620936055805
+        ],
+        [
+          "Course: CS101 — Introduction to Programming Assessment: - Coursework 40% (Assignment 1: 15%, Assignment 2: 25%) - Midterm 20% - Final exam 40% Important dates: - Assignment 1 due: 2026-03-15 - Assignment 2 due: 2026-04-20 - Midterm: 2026-04-01 - Final exam period: 2026-05-10 to 2026-05-20 Learning outcomes: - Write basic Python programs - Understand control flow, data structures, and functions Course Convenor: Dr. Alice Wong <alice.wong@hkbu.edu.hk> Office hours: Tue 14:00–15:00, Room A105",
+          0.0
+        ]
+      ],
+      "prompt_tokens": 451,
+      "response_tokens": 28,
+      "response": "Extractive fallback summary from retrieved snippets:\n- [1] Academic Accommodation Policy (excerpt) Students with documented disabilities or temporary medical conditions may request accommodations"
+    }
+  ]
+}

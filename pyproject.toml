@@ -31,4 +31,5 @@ dependencies = [
     "pandas>=3.0.2",
     "tdqm>=0.0.1",
     "python-dotenv>=1.2.2",
+    "matplotlib>=3.10.8",
 ]

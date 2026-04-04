@@ -12,11 +12,11 @@
 - [ ] ollama_client.py — ollama.generate(raw=True), justify temperature + num_predict in report
 - [ ] conversation.py — Rolling message list, truncate oldest turns at token budget
 
-### Orchestration + HITL  [MINIMUM — core to your architecture] [FINISHED]
+### Orchestration + HITL  [MINIMUM — core to your architecture] [FINISHED,need review and refine]
 - [ ] graph.py — LangGraph StateGraph: retrieve → aggregate → assemble → generate → postprocess → hitl → output
 - [ ] hitl.py — CLI or widget approve/reject/regenerate loop
 
-### Evaluation Notebooks  [MINIMUM]
+### Evaluation Notebooks  [MINIMUM] [FINISHED,NEED REVIEW AND REFINE]
 - [ ] 01_baseline_no_rag.ipynb — 5–10 queries, no retrieval, log token counts
 - [ ] 02_rag_pipeline.ipynb — BM25-only, vector-only, hybrid; cite retrieved snippets
 - [ ] 03_evaluation.ipynb — No-RAG vs RAG, lexical vs neural, token usage charts
@@ -24,6 +24,9 @@
 ### Advanced (Optional +20%)
 - [ ] tools.py — Playwright headless browser for live HKBU timetable/news
 - [ ] quality_eval.py — BLEU/ROUGE or LLM-as-judge + token_tracker.py
+
+### Maybe needed
+- [ ] file upload module
 
 ### Report Workflow
 - Draft the report in small sections first.

@@ -1,0 +1,37 @@
+[
+  {
+    "query": "What is the assessment weighting for CS101 (coursework, midterm, final)?",
+    "prompt": "Role:\nAssistant for HKBU students\n\nTask:\nWhat is the assessment weighting for CS101 (coursework, midterm, final)?\n\nContext Snippets:\nNone provided.\n\nConstraints:\n- Be concise\n- Use bullet points when helpful\n- Return only the final answer and do not repeat the Task or prompt text\n\nOutput Format:\nPlain text",
+    "response": "Information regarding the assessment weighting for CS101 is not provided.",
+    "prompt_tokens": 60,
+    "response_tokens": 11
+  },
+  {
+    "query": "When are the CS101 assignment deadlines and exam dates?",
+    "prompt": "Role:\nAssistant for HKBU students\n\nTask:\nWhen are the CS101 assignment deadlines and exam dates?\n\nContext Snippets:\nNone provided.\n\nConstraints:\n- Be concise\n- Use bullet points when helpful\n- Return only the final answer and do not repeat the Task or prompt text\n\nOutput Format:\nPlain text",
+    "response": "Please provide the relevant course materials or context so I can tell you the CS101 assignment deadlines and exam dates.",
+    "prompt_tokens": 55,
+    "response_tokens": 21
+  },
+  {
+    "query": "Who is the course convenor for CS101 and how can I contact them?",
+    "prompt": "Role:\nAssistant for HKBU students\n\nTask:\nWho is the course convenor for CS101 and how can I contact them?\n\nContext Snippets:\nNone provided.\n\nConstraints:\n- Be concise\n- Use bullet points when helpful\n- Return only the final answer and do not repeat the Task or prompt text\n\nOutput Format:\nPlain text",
+    "response": "I do not have access to the specific course convenor information for CS101 at HKBU. Please contact the HKBU academic administration or the relevant department directly for this information.",
+    "prompt_tokens": 59,
+    "response_tokens": 31
+  },
+  {
+    "query": "Where and when are CS101 lab sessions held?",
+    "prompt": "Role:\nAssistant for HKBU students\n\nTask:\nWhere and when are CS101 lab sessions held?\n\nContext Snippets:\nNone provided.\n\nConstraints:\n- Be concise\n- Use bullet points when helpful\n- Return only the final answer and do not repeat the Task or prompt text\n\nOutput Format:\nPlain text",
+    "response": "Information regarding the location and time of CS101 lab sessions is not provided.",
+    "prompt_tokens": 54,
+    "response_tokens": 14
+  },
+  {
+    "query": "What is the CS101 convenor office hour schedule?",
+    "prompt": "Role:\nAssistant for HKBU students\n\nTask:\nWhat is the CS101 convenor office hour schedule?\n\nContext Snippets:\nNone provided.\n\nConstraints:\n- Be concise\n- Use bullet points when helpful\n- Return only the final answer and do not repeat the Task or prompt text\n\nOutput Format:\nPlain text",
+    "response": "I do not have the CS101 convenor office hour schedule as no context was provided. Please provide the relevant information.",
+    "prompt_tokens": 54,
+    "response_tokens": 22
+  }
+]
