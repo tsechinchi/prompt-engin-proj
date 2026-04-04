@@ -32,4 +32,8 @@ dependencies = [
     "tdqm>=0.0.1",
     "python-dotenv>=1.2.2",
     "matplotlib>=3.10.8",
+    "pytest>=9.0.2",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.31.0",
+    "python-multipart>=0.0.12",
 ]

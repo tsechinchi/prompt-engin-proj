@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HKBU Signal Desk</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Manrope:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="mesh" aria-hidden="true"></div>
+
+    <header class="masthead wrap reveal">
+      <div class="logo-block">
+        <span class="logo-dot"></span>
+        <div>
+          <p class="eyebrow">HKBU Study Companion</p>
+          <h1>Signal Desk</h1>
+        </div>
+      </div>
+      <div class="header-actions">
+        <p class="lead">Live retrieval cockpit for questions, sources, and quality checks.</p>
+        <button id="loadDemo" class="btn btn-outline" type="button">Load Demo Query</button>
+      </div>
+    </header>
+
+    <main class="wrap stage">
+      <section class="panel panel-query reveal stagger-1">
+        <div class="panel-head">
+          <h2>Dispatch Query</h2>
+          <span id="statusText" class="status-chip">Ready</span>
+        </div>
+        <p class="hint">Compose student intent, choose retrieval strategy, and preview upload payload before generation.</p>
+
+        <label for="queryInput">Question</label>
+        <textarea
+          id="queryInput"
+          placeholder="Ask a policy, timetable, exam, or deadline question..."
+          rows="5"
+        ></textarea>
+
+        <div class="grid-2">
+          <div>
+            <label for="modeSelect">Mode</label>
+            <select id="modeSelect">
+              <option value="baseline">Baseline (No RAG)</option>
+              <option value="bm25">BM25</option>
+              <option value="vector">Vector</option>
+              <option value="hybrid" selected>Hybrid</option>
+            </select>
+          </div>
+          <div>
+            <label for="temperature">Creativity</label>
+            <div class="range-wrap">
+              <input id="temperature" type="range" min="0" max="1" step="0.1" value="0.3" />
+              <strong id="tempReadout">0.3</strong>
+            </div>
+          </div>
+        </div>
+
+        <label for="fileUpload">Upload docs (PDF, DOCX, PPTX)</label>
+        <input id="fileUpload" type="file" multiple accept=".pdf,.docx,.pptx" />
+        <ul id="uploadList" class="upload-log"></ul>
+
+        <div class="row actions">
+          <button id="askBtn" class="btn btn-primary" type="button">Generate Answer</button>
+          <span id="modeBadge" class="mode-badge">Mode: Hybrid</span>
+        </div>
+      </section>
+
+      <aside class="panel panel-radar reveal stagger-2">
+        <div class="panel-head">
+          <h2>Live Radar</h2>
+          <span class="status-chip status-idle">Passive</span>
+        </div>
+        <div class="radar-grid">
+          <article>
+            <h3>Timetable</h3>
+            <p id="timetableSignal">No live fetch yet. Connect this panel to `fetch_hkbu_updates()`.</p>
+          </article>
+          <article>
+            <h3>Campus News</h3>
+            <p id="newsSignal">Awaiting source stream. Keep this card for Playwright snapshots.</p>
+          </article>
+        </div>
+
+        <h2 class="metrics-title">Quality Snapshot</h2>
+        <div class="metric-row">
+          <span>BLEU</span>
+          <progress id="bleuBar" max="1" value="0"></progress>
+          <strong id="bleuValue">0.00</strong>
+        </div>
+        <div class="metric-row">
+          <span>ROUGE-L</span>
+          <progress id="rougeBar" max="1" value="0"></progress>
+          <strong id="rougeValue">0.00</strong>
+        </div>
+      </aside>
+
+      <section class="panel panel-output reveal stagger-3">
+        <div class="panel-head output-head">
+          <h2>Assistant Output</h2>
+          <div id="tokenPill" class="token-pill">Tokens: 0</div>
+        </div>
+        <article id="answerBox" class="answer-box">Your answer will appear here.</article>
+        <h3>Citations</h3>
+        <ol id="citationList" class="citation-list"></ol>
+      </section>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://unpkg.com/mammoth@1.8.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
