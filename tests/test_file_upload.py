@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 
 from src.ingestion import ingest_uploaded_file, ingest_uploaded_files, save_uploaded_file
 
@@ -51,6 +52,22 @@ class FileUploadTests(unittest.TestCase):
             self.assertEqual(len(docs), 2)
             names = [doc["metadata"]["source_name"] for doc in docs]  # type: ignore[index]
             self.assertEqual(names, ["a.txt", "b.md"])
+
+    def test_ingest_uploaded_docx_uses_loader(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            with patch(
+                "src.ingestion.loader._convert_with_markitdown",
+                return_value="Converted docx content",
+            ):
+                docs = ingest_uploaded_file(
+                    filename="notes.docx",
+                    content=b"DOCX-bytes",
+                    upload_dir=tmpdir,
+                )
+
+            self.assertEqual(len(docs), 1)
+            self.assertEqual(docs[0]["text"], "Converted docx content")
+            self.assertEqual(docs[0]["metadata"]["source_name"], "notes.docx")  # type: ignore[index]
 
     def test_empty_filename_after_sanitization_raises(self) -> None:
         with TemporaryDirectory() as tmpdir:

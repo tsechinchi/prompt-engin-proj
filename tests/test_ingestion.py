@@ -79,6 +79,38 @@ class LoadDocumentsTests(unittest.TestCase):
             self.assertEqual(docs[1]["metadata"]["page_number"], 3) #type: ignore
             self.assertEqual(docs[0]["metadata"]["source_type"], "pdf") #type: ignore
 
+    def test_load_docx_uses_markitdown(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            docx_path = Path(tmpdir) / "notes.docx"
+            docx_path.write_bytes(b"DOCX-pretend")
+
+            with patch(
+                "src.ingestion.loader._convert_with_markitdown",
+                return_value="Section one\n\nSection two",
+            ):
+                docs = load_documents(str(docx_path))
+
+            self.assertEqual(len(docs), 1)
+            self.assertEqual(docs[0]["text"], "Section one Section two")
+            self.assertEqual(docs[0]["metadata"]["source_type"], "docx") #type: ignore
+            self.assertEqual(docs[0]["metadata"]["source_name"], "notes.docx") #type: ignore
+
+    def test_load_pptx_uses_markitdown(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            pptx_path = Path(tmpdir) / "slides.pptx"
+            pptx_path.write_bytes(b"PPTX-pretend")
+
+            with patch(
+                "src.ingestion.loader._convert_with_markitdown",
+                return_value="Slide 1 title\n\nSlide 2 title",
+            ):
+                docs = load_documents(str(pptx_path))
+
+            self.assertEqual(len(docs), 1)
+            self.assertEqual(docs[0]["text"], "Slide 1 title Slide 2 title")
+            self.assertEqual(docs[0]["metadata"]["source_type"], "pptx") #type: ignore
+            self.assertEqual(docs[0]["metadata"]["source_name"], "slides.pptx") #type: ignore
+
 
 class ChunkingTests(unittest.TestCase):
     def test_chunk_short_text_returns_one_chunk(self) -> None:

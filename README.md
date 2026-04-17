@@ -178,7 +178,7 @@ localStorage.setItem("hkbu_use_mock_corpus", "true");  // for demo mode
 
 ## Next Steps
 
-1. Add custom source documents to `data/mock/` (PDF, TXT, MD format)
+1. Add custom source documents to `data/mock/` (PDF, DOCX, PPTX, TXT, MD format)
 2. Connect live Ollama model (set `use_mock_generation: false` in frontend)
 3. Write your report using `report/` templates
 4. Run evaluation notebooks to measure quality metrics

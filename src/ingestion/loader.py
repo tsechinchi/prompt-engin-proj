@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from functools import lru_cache
 from hashlib import sha1
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import TypedDict
 import re
 
@@ -25,9 +27,10 @@ class LoadedDocument(TypedDict):
     metadata: DocumentMetadata
 
 
-_SUPPORTED_SUFFIXES = {".pdf", ".txt", ".md"}
+_SUPPORTED_SUFFIXES = {".pdf", ".txt", ".md", ".docx", ".pptx"}
 _MARKDOWN_SUFFIXES = {".md"}
 _TEXT_SUFFIXES = {".txt"}
+_MARKITDOWN_SUFFIXES = {".docx", ".pptx"}
 
 
 def load_documents(path: str) -> list[LoadedDocument]:
@@ -65,6 +68,15 @@ def _load_file(path: Path) -> list[LoadedDocument]:
 
     if suffix in _TEXT_SUFFIXES | _MARKDOWN_SUFFIXES:
         text = _normalize_text(path.read_text(encoding="utf-8"))
+        if not text:
+            return []
+        return [{"text": text, "metadata": metadata}]
+
+    if suffix in _MARKITDOWN_SUFFIXES:
+        try:
+            text = _normalize_text(_convert_with_markitdown(path))
+        except Exception as exc:  # pragma: no cover - depends on converter/backend
+            raise RuntimeError(f"Failed to extract document text from {path}") from exc
         if not text:
             return []
         return [{"text": text, "metadata": metadata}]
@@ -110,6 +122,10 @@ def _source_type_for_suffix(suffix: str) -> str:
         return "text"
     if suffix in _MARKDOWN_SUFFIXES:
         return "markdown"
+    if suffix == ".docx":
+        return "docx"
+    if suffix == ".pptx":
+        return "pptx"
     raise ValueError(f"Unsupported document type: {suffix}")
 
 
@@ -118,53 +134,45 @@ def _normalize_text(text: str) -> str:
 
 
 def _extract_pdf_pages(path: Path) -> list[str]:
-    """Extract PDF pages with a pypdf-first strategy and pdfplumber fallback."""
-
-    pypdf_error: Exception | None = None
-    pypdf_pages: list[str] = []
+    """Extract each PDF page with MarkItDown so page metadata stays stable."""
 
     try:
-        pypdf_pages = _extract_pdf_pages_with_pypdf(path)
-    except Exception as exc:  # pragma: no cover - exercised through fallback tests
-        pypdf_error = exc
-
-    if any(_normalize_text(page) for page in pypdf_pages):
-        return pypdf_pages
-
-    try:
-        pdfplumber_pages = _extract_pdf_pages_with_pdfplumber(path)
-    except ImportError:
-        if pypdf_error is not None:
-            raise RuntimeError(f"Failed to extract PDF text from {path}") from pypdf_error
-        if pypdf_pages:
-            return pypdf_pages
-        raise ImportError("Loading PDF files requires pypdf or pdfplumber.")
-    except Exception as exc:  # pragma: no cover - depends on external parsers
-        if pypdf_error is not None:
-            raise RuntimeError(f"Failed to extract PDF text from {path}") from pypdf_error
-        raise RuntimeError(f"Failed to extract PDF text from {path}") from exc
-
-    if any(_normalize_text(page) for page in pdfplumber_pages):
-        return pdfplumber_pages
-
-    return pypdf_pages or pdfplumber_pages
-
-
-def _extract_pdf_pages_with_pypdf(path: Path) -> list[str]:
-    try:
-        from pypdf import PdfReader
+        from pypdf import PdfReader, PdfWriter
     except ImportError as exc:  # pragma: no cover - depends on local environment
-        raise ImportError("pypdf is not installed.") from exc
+        raise ImportError("Loading PDF files requires pypdf.") from exc
 
     reader = PdfReader(str(path))
-    return [page.extract_text() or "" for page in reader.pages]
+    pages: list[str] = []
+
+    with TemporaryDirectory() as tmpdir:
+        temp_dir = Path(tmpdir)
+        for index, page in enumerate(reader.pages, start=1):
+            writer = PdfWriter()
+            writer.add_page(page)
+
+            page_path = temp_dir / f"page_{index}.pdf"
+            with page_path.open("wb") as handle:
+                writer.write(handle)
+
+            pages.append(_convert_with_markitdown(page_path))
+
+    return pages
 
 
-def _extract_pdf_pages_with_pdfplumber(path: Path) -> list[str]:
+@lru_cache(maxsize=1)
+def _get_markitdown_instance():
     try:
-        import pdfplumber
+        from markitdown import MarkItDown
     except ImportError as exc:  # pragma: no cover - depends on local environment
-        raise ImportError("pdfplumber is not installed.") from exc
+        raise ImportError("markitdown is not installed.") from exc
 
-    with pdfplumber.open(path) as pdf:
-        return [page.extract_text() or "" for page in pdf.pages]
+    return MarkItDown()
+
+
+def _convert_with_markitdown(path: Path) -> str:
+    converter = _get_markitdown_instance()
+    result = converter.convert(str(path))
+    text = getattr(result, "text_content", None)
+    if isinstance(text, str):
+        return text
+    return str(result)
