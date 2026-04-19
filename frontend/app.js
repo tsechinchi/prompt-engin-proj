@@ -21,6 +21,7 @@ const bleuValue = document.getElementById("bleuValue");
 const rougeValue = document.getElementById("rougeValue");
 const conversationPane = document.getElementById("conversationPane");
 const conversationStatus = document.getElementById("conversationStatus");
+const clearConversationBtn = document.getElementById("clearConversationBtn");
 
 const API_BASE = window.localStorage.getItem("hkbu_api_base") || "http://127.0.0.1:8000";
 const USE_MOCK_CORPUS = false;
@@ -583,6 +584,33 @@ fileUpload.addEventListener("change", async () => {
 
 modeSelect.addEventListener("change", refreshModeBadge);
 temperature.addEventListener("input", refreshTempReadout);
+
+if (clearConversationBtn) {
+  clearConversationBtn.addEventListener("click", () => {
+    // Clear conversation
+    conversationHistory = [];
+    renderConversationHistory();
+    setConversationStatus("Live (Cleared)");
+    setTimeout(() => setConversationStatus("Live"), 2000);
+
+    // Clear output
+    answerBox.innerHTML = "Your answer will appear here.";
+    citationList.innerHTML = "";
+    modelPill.textContent = "Model: None";
+    modelPill.style.color = "inherit";
+    modelPill.style.borderColor = "inherit";
+    tokenPill.textContent = "Tokens: 0";
+    
+    // Reset quality metrics
+    setMetric(0, bleuBar, bleuValue);
+    setMetric(0, rougeBar, rougeValue);
+    
+    // Clear query input
+    queryInput.value = "";
+    
+    setStatus("Ready. Cleared all previous conversation and outputs.");
+  });
+}
 
 askBtn.addEventListener("click", async () => {
   const query = queryInput.value.trim();

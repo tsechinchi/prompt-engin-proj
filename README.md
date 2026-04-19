@@ -1,6 +1,6 @@
-# HKBU Study Companion
+# HKBU Signal Desk (Study Companion)
 
-Project skeleton for a prompt engineering / RAG / agentic workflow assignment.
+An advanced Agentic Retrieval-Augmented Generation (RAG) system and Study Companion built for prompt engineering and information retrieval evaluation. This full-stack application features a FastAPI backend orchestrating LangGraph workflows, a bespoke hybrid search (BM25 + Semantic Vector) pipeline, and a modern, responsive frontend (Signal Desk) for live document analysis.
 
 ## Setup With `uv`
 
@@ -54,7 +54,10 @@ See [`PROJECT_TODO.md`](PROJECT_TODO.md) for the prioritized checklist.
 
 - Python 3.11 or higher
 - `uv` package manager ([install here](https://docs.astral.sh/uv/))
-- Ollama (optional, for local LLM; fallback to mock generation available)
+- **Ollama**: Local language model runner ([install here](https://ollama.com/download))
+  - ⚠️ **CRITICAL: You MUST install `gemma3:4b`** as it is the default model backing the generation pipeline.
+  - Run the following in your terminal: `ollama pull gemma3:4b`
+  - *(Optional)* We also use `qwen3.5:4b` for testing: `ollama pull qwen3.5:4b`
 
 ### Installation
 
