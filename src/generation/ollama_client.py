@@ -70,6 +70,10 @@ def generate_raw(prompt: str, *, model: str, temperature: float = 0.3, num_predi
 
 def _format_prompt_for_model(*, prompt: str, model: str) -> str:
     """Format prompt per-model when needed for raw decoding."""
+    if "gemma" in model.lower():
+        return f"<start_of_turn>user\n{prompt}<end_of_turn>\n<start_of_turn>model\n"
+    
+    # Fallback for llama3/mistral/etc if needed later
     return prompt
 
 
@@ -146,5 +150,9 @@ def _sanitize_generated_text(text: str) -> str:
 
     cleaned = re.sub(r"<\s*start_of_turn[^\n>]*>?", "", text, flags=re.IGNORECASE)
     cleaned = re.sub(r"<\s*end_of_turn[^\n>]*>?", "", cleaned, flags=re.IGNORECASE)
+    
+    # Remove leading question repetition if present
+    cleaned = re.sub(r"^(Could you please specify|Question:|Student:|User:).*?\n+", "", cleaned, flags=re.IGNORECASE)
+    
     cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
     return cleaned.strip()

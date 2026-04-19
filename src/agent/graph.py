@@ -9,7 +9,7 @@ from typing import Any, NotRequired, TypedDict
 from langgraph.graph import END, START, StateGraph
 
 from src.generation import generate_raw
-from src.prompt import assemble_prompt
+from src.prompt import TEMPLATES, assemble_prompt
 from src.retrieval import BM25Retriever, VectorRetriever, fuse_scores
 
 from .hitl import HITLDecision, review_output
@@ -19,6 +19,7 @@ class AgentState(TypedDict, total=False):
     """State carried through the orchestration graph."""
 
     query: str
+    mode: str
     chunk_records: list[dict[str, Any]]
     role: str
     constraints: list[str]
@@ -41,6 +42,7 @@ class AgentState(TypedDict, total=False):
     min_query_term_overlap: int
     prompt: str
     context_snippets: list[str]
+    history: list[dict[str, str]]
     bm25_hits: list[tuple[str, float]]
     vector_hits: list[tuple[str, float]]
     fused_hits: list[tuple[str, float]]
@@ -187,16 +189,36 @@ def _assess_retrieval_node(state: AgentState) -> AgentState:
 
 def _assemble_node(state: AgentState) -> AgentState:
     constraints = list(state.get("constraints", []))
+    
+    # Prompt engineering constraints for structured and concise output
+    constraints.extend([
+        "You MUST format your entire response in valid Markdown. Do not use plain text.",
+        "Do NOT include any <think> reasoning blocks, conversational fillers, or intro/outro remarks. Output only the final meaningful response.",
+        "Do NOT repeat or echo the user's question in your response.",
+        "Use actual Markdown headers (e.g., ### Summary) to separate sections.",
+        "Use formatting like bolding and bulleted lists to make the output user-friendly.",
+        "Format the response into distinct paragraphs with blank lines between them.",
+        "Base your answer strictly on the provided context if available.",
+        "If the user is asking something not related to the RAG document, output ONLY 'The provider context cannot find in the uploaded document'. Do not include any other text.",
+        "When referring to names of people, ALWAYS use their full names exactly as they appear in the provided context snippets (e.g., 'Dr. Shichao Ma' instead of just 'Dr. Shichao').",
+        f"You MUST directly answer the user's core question: '{state['query']}'. Do not provide a generic summary of the text.",
+        "At the very end of your response, you MUST provide an 'Actionable next step' with a specific follow-up question the user could ask."
+    ])
+    
     review_feedback = state.get("review_feedback", "").strip()
     if review_feedback:
         constraints.append(f"Reviewer feedback for this revision: {review_feedback}")
 
+    mode = state.get("mode", "hybrid")
+    template = TEMPLATES.get(mode, TEMPLATES["hybrid"])
+
     prompt = assemble_prompt(
-        role=state.get("role", "Helpful HKBU study companion"),
-        task=state["query"],
+        role=state.get("role", template.get("role", "Expert HKBU study companion AI")),
+        task=state.get("task", f"{template.get('task', 'Answer the following question based solely on the provided context.')} Question: {state['query']}"),
         context_snippets=state.get("context_snippets", []),
         constraints=constraints,
-        output_format=state.get("output_format", "Provide a concise answer with citations."),
+        output_format=state.get("output_format", template.get("output_format", "Structured Markdown: 1) Brief Direct Answer, 2) Details in bullet points, 3) Actionable follow-up question.")),
+        conversation_history=state.get("history", []),
     )
     return {"prompt": prompt}
 
@@ -208,7 +230,7 @@ def _make_generate_node(default_generate_fn: Callable[..., str]):
             state["prompt"],
             model=state.get("model", "gemma3:4b"),
             temperature=state.get("temperature", 0.3),
-            num_predict=state.get("num_predict", 200),
+            num_predict=state.get("num_predict", 800),
         )
         return {"generated_text": text}
 
@@ -329,7 +351,7 @@ def _route_after_hitl(state: AgentState) -> str:
 def _abstain_for_retrieval_mismatch(state: AgentState, reason: str) -> AgentState:
     message = state.get(
         "abstention_message",
-        "I do not have enough relevant context to answer confidently. Please provide more relevant documents or rephrase the question.",
+        "The provider context cannot find in the uploaded document",
     )
     return {
         "retrieval_mismatch": True,

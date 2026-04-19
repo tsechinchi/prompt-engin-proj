@@ -10,6 +10,9 @@ import numpy as np
 
 _TOKEN_RE = re.compile(r"\w+")
 
+# Workaround for sentence-transformers FutureWarning about embeddings.position_ids
+import warnings
+warnings.filterwarnings("ignore", message=".*embeddings.position_ids.*", category=FutureWarning)
 
 class VectorRetriever:
     """Semantic retriever backed by sentence-transformers and FAISS when available."""

@@ -101,6 +101,9 @@ def _tokenize(text: str) -> list[str]:
 
 
 def _build_rank_bm25(tokenized_docs: list[list[str]]):
+    if not tokenized_docs:
+        return None
+        
     try:
         from rank_bm25 import BM25Okapi
     except ImportError:

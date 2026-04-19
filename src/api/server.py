@@ -16,6 +16,7 @@ from src.agent import build_graph
 from src.evaluation.token_tracker import track_usage
 from src.generation import generate_raw
 from src.ingestion import chunk_documents, load_documents
+from src.memory import ConversationBuffer
 
 
 class UploadedDocPayload(BaseModel):
@@ -34,7 +35,8 @@ class AskRequest(BaseModel):
     top_k: int = 5
     model: str = "gemma3:4b"
     uploaded_docs: list[UploadedDocPayload] = Field(default_factory=list)
-    use_mock_generation: bool = True
+    history: list[dict[str, str]] = Field(default_factory=list)
+    use_mock_generation: bool = False
     use_mock_corpus: bool = False
 
 
@@ -47,6 +49,7 @@ class AskResponse(BaseModel):
     quality: dict[str, float]
     tokens: dict[str, int]
     radar_snippets: list[dict[str, str]]
+    model_used: str
 
 
 def create_app() -> FastAPI:
@@ -68,8 +71,9 @@ def create_app() -> FastAPI:
 
     @app.post("/api/ask", response_model=AskResponse)
     def ask(payload: AskRequest) -> AskResponse:
+        generation_info = {"model_used": "unknown"}
         graph = build_graph(
-            generate_fn=_make_generate_fn(payload),
+            generate_fn=_make_generate_fn(payload, generation_info),
             hitl_fn=lambda _text: {"action": "approve", "feedback": ""},
         )
 
@@ -87,10 +91,15 @@ def create_app() -> FastAPI:
 
         bm25_weight, vector_weight = _mode_weights(payload.mode)
 
+        history_buffer = ConversationBuffer(max_messages=12, max_tokens=1200)
+        history_buffer.extend(payload.history)
+
         result = graph.invoke(
             {
                 "query": payload.query,
+                "mode": payload.mode,
                 "chunk_records": chunk_records,
+                "history": history_buffer.messages,
                 "top_k": max(payload.top_k, 1),
                 "temperature": max(payload.temperature, 0.0),
                 "model": payload.model,
@@ -128,6 +137,7 @@ def create_app() -> FastAPI:
             quality=quality,
             tokens=usage,
             radar_snippets=radar_snippets,
+            model_used=generation_info["model_used"],
         )
 
     return app
@@ -186,19 +196,24 @@ def _should_abstain_on_mismatch(*, mode: str, has_uploaded_chunks: bool, has_any
     return has_any_chunks
 
 
-def _make_generate_fn(payload: AskRequest):
+def _make_generate_fn(payload: AskRequest, generation_info: dict):
     def _generate(prompt: str, **kwargs: object) -> str:
         if payload.use_mock_generation:
+            generation_info["model_used"] = "mock"
             return _mock_generate_from_prompt(prompt, payload.query)
 
         try:
-            return generate_raw(
+            res = generate_raw(
                 prompt,
                 model=str(kwargs.get("model", payload.model)),
                 temperature=float(kwargs.get("temperature", payload.temperature)),
-                num_predict=int(kwargs.get("num_predict", 260)),
+                num_predict=int(kwargs.get("num_predict", 800)),
             )
-        except Exception:
+            generation_info["model_used"] = "ollama"
+            return res
+        except Exception as e:
+            print(f"Ollama generation failed: {repr(e)}")
+            generation_info["model_used"] = "mock_fallback"
             return _mock_generate_from_prompt(prompt, payload.query)
 
     return _generate
@@ -284,11 +299,12 @@ def _extract_snippets_from_prompt(prompt: str) -> list[str]:
 
 
 def _compress_text(text: str, *, max_chars: int) -> str:
-    cleaned = re.sub(r"\s+", " ", text).strip()
+    cleaned = re.sub(r"[ \t\r]+", " ", text).strip()
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
     if len(cleaned) <= max_chars:
         return cleaned
 
-    sentence_like = re.split(r"(?<=[.!?])\s+", cleaned)
+    sentence_like = re.split(r"(?<!\bDr\.)(?<!\bMr\.)(?<!\bMs\.)(?<!\bMrs\.)(?<!\bProf\.)(?<!\be\.g\.)(?<!\bi\.e\.)(?<!\bvs\.)(?<=[.!?])\s+", cleaned)
     buffer = ""
     for sentence in sentence_like:
         candidate = f"{buffer} {sentence}".strip()

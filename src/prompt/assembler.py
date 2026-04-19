@@ -10,12 +10,14 @@ def assemble_prompt(
     context_snippets: list[str],
     constraints: list[str],
     output_format: str,
+    conversation_history: list[dict[str, str]] | None = None,
 ) -> str:
     """Build a structured prompt from reusable components."""
 
     sections = [
         _format_section("Role", role.strip()),
         _format_section("Task", task.strip()),
+        _format_history_section(conversation_history or []),
         _format_context_section(context_snippets),
         _format_list_section("Constraints", constraints, bullet="-"),
         _format_section("Output Format", output_format.strip()),
@@ -37,6 +39,23 @@ def _format_context_section(context_snippets: list[str]) -> str:
     if not lines:
         return "Context Snippets:\nNone provided."
     return "Context Snippets:\n" + "\n".join(lines)
+
+
+def _format_history_section(conversation_history: list[dict[str, str]]) -> str:
+    if not conversation_history:
+        return ""
+
+    lines: list[str] = []
+    for message in conversation_history:
+        role = message.get("role", "user").strip().lower()
+        content = message.get("content", "").strip()
+        if not content:
+            continue
+        lines.append(f"- {role.title()}: {content}")
+
+    if not lines:
+        return ""
+    return "Conversation History:\n" + "\n".join(lines)
 
 
 def _format_list_section(title: str, items: list[str], *, bullet: str) -> str:

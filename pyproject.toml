@@ -38,3 +38,12 @@ dependencies = [
     "python-multipart>=0.0.12",
     "markitdown>=0.1.5",
 ]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore:builtin type SwigPyPacked has no __module__ attribute:DeprecationWarning",
+    "ignore:builtin type SwigPyObject has no __module__ attribute:DeprecationWarning",
+    "ignore:builtin type swigvarlink has no __module__ attribute:DeprecationWarning",
+    "ignore:.*embeddings.position_ids.*:FutureWarning:.*"
+]
+

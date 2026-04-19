@@ -1,5 +1,6 @@
 const queryInput = document.getElementById("queryInput");
 const modeSelect = document.getElementById("modeSelect");
+const modeExplanation = document.getElementById("modeExplanation");
 const temperature = document.getElementById("temperature");
 const fileUpload = document.getElementById("fileUpload");
 const uploadList = document.getElementById("uploadList");
@@ -9,6 +10,7 @@ const statusText = document.getElementById("statusText");
 const answerBox = document.getElementById("answerBox");
 const citationList = document.getElementById("citationList");
 const tokenPill = document.getElementById("tokenPill");
+const modelPill = document.getElementById("modelPill");
 const timetableSignal = document.getElementById("timetableSignal");
 const newsSignal = document.getElementById("newsSignal");
 const modeBadge = document.getElementById("modeBadge");
@@ -17,8 +19,10 @@ const bleuBar = document.getElementById("bleuBar");
 const rougeBar = document.getElementById("rougeBar");
 const bleuValue = document.getElementById("bleuValue");
 const rougeValue = document.getElementById("rougeValue");
+const conversationPane = document.getElementById("conversationPane");
+const conversationStatus = document.getElementById("conversationStatus");
 
-const API_BASE = window.localStorage.getItem("hkbu_api_base") || "http://localhost:8000";
+const API_BASE = window.localStorage.getItem("hkbu_api_base") || "http://127.0.0.1:8000";
 const USE_MOCK_CORPUS = false;
 
 const STOP_WORDS = new Set([
@@ -43,13 +47,25 @@ const STOP_WORDS = new Set([
 ]);
 
 let uploadedDocs = [];
+let conversationHistory = [];
+
+if (window.marked) {
+  window.marked.setOptions({
+    breaks: true,
+    gfm: true
+  });
+}
 
 function tokensApprox(text) {
   return Math.max(1, Math.ceil(text.trim().split(/\s+/).length * 1.2));
 }
 
 function normalize(text) {
-  return text.replace(/\s+/g, " ").trim();
+  // Preserve line breaks but collapse multiple blank lines
+  return text
+    .replace(/[ \t\r]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function queryTerms(query) {
@@ -73,7 +89,7 @@ function splitIntoSnippets(text) {
     return [];
   }
 
-  const sentences = normalized.split(/(?<=[.!?])\s+/).filter(Boolean);
+  const sentences = normalized.split(/(?<!\bDr\.)(?<!\bMr\.)(?<!\bMs\.)(?<!\bMrs\.)(?<!\bProf\.)(?<!\be\.g\.)(?<!\bi\.e\.)(?<!\bvs\.)(?<=[.!?])\s+/).filter(Boolean);
   if (sentences.length <= 1) {
     return [normalized];
   }
@@ -277,7 +293,6 @@ async function parsePptxFile(file) {
     const plain = matches.map((match) => decodeXmlEntities(match[1])).join(" ");
     slideTexts.push(plain);
   }
-
   return normalize(slideTexts.join(" "));
 }
 
@@ -355,6 +370,62 @@ function renderCitations(items) {
   }
 }
 
+function renderConversationHistory() {
+  if (!conversationPane) {
+    return;
+  }
+
+  conversationPane.innerHTML = "";
+  if (!conversationHistory.length) {
+    const message = document.createElement("p");
+    message.className = "conversation-empty";
+    message.textContent = "Start by asking a question to see your conversation history here.";
+    conversationPane.appendChild(message);
+    return;
+  }
+
+  for (const item of conversationHistory) {
+    const message = document.createElement("article");
+    message.className = `conversation-message conversation-${item.role}`;
+
+    const badge = document.createElement("span");
+    badge.className = "conversation-role";
+    badge.textContent = item.role === "user" ? "Student" : "Assistant";
+
+    const content = document.createElement("div");
+    content.className = "conversation-content";
+    content.innerHTML = window.marked ? marked.parse(item.content) : item.content;
+
+    message.appendChild(badge);
+    message.appendChild(content);
+    conversationPane.appendChild(message);
+  }
+
+  conversationPane.scrollTop = conversationPane.scrollHeight;
+}
+
+function appendConversationMessage(role, content) {
+  conversationHistory.push({ role, content });
+  renderConversationHistory();
+}
+
+function updateLastAssistantMessage(content) {
+  for (let i = conversationHistory.length - 1; i >= 0; i -= 1) {
+    if (conversationHistory[i].role === "assistant") {
+      conversationHistory[i].content = content;
+      break;
+    }
+  }
+  renderConversationHistory();
+}
+
+function setConversationStatus(text) {
+  if (!conversationStatus) {
+    return;
+  }
+  conversationStatus.textContent = text;
+}
+
 function setMetric(value, barEl, textEl) {
   const bounded = Math.max(0, Math.min(1, value));
   barEl.value = bounded;
@@ -362,12 +433,13 @@ function setMetric(value, barEl, textEl) {
 }
 
 function buildApiPayload(query) {
+  const isMock = document.getElementById("mockToggle").checked;
   return {
     query,
     mode: modeSelect.value,
     temperature: Number(temperature.value),
     top_k: 5,
-    use_mock_generation: true,
+    use_mock_generation: isMock,
     use_mock_corpus: USE_MOCK_CORPUS,
     uploaded_docs: uploadedDocs
       .filter((doc) => doc.text)
@@ -375,6 +447,10 @@ function buildApiPayload(query) {
         name: doc.name,
         text: doc.text,
       })),
+    history: conversationHistory.map((item) => ({
+      role: item.role,
+      content: item.content,
+    })),
   };
 }
 
@@ -402,6 +478,7 @@ async function requestGraphAnswer(query) {
       : [],
     tokenTotal: Number(data.tokens?.total_tokens ?? 0),
     status: String(data.status || "done"),
+    modelUsed: String(data.model_used || "unknown"),
   };
 }
 
@@ -413,9 +490,19 @@ function setStatus(text, mode = "ready") {
   }
 }
 
+const MODE_EXPLANATIONS = {
+  "baseline": "Baseline (no RAG): Generates an answer strictly from the model's internal base knowledge. Does not use retrieved documents.",
+  "bm25": "BM25: Retrieves documents based strictly on keyword matching and frequency. Ideal for finding exact queries like names or acronyms.",
+  "vector": "Vector: Retrieves documents based on semantic meaning using embeddings. Ideal for finding answers to conceptually phrased queries.",
+  "hybrid": "Hybrid: Blends BM25 for precise keyword hits and Vector search for semantic understanding. It mixes the two for robust retrieval."
+};
+
 function refreshModeBadge() {
   const modeLabel = modeSelect.options[modeSelect.selectedIndex].text;
   modeBadge.textContent = `Mode: ${modeLabel}`;
+  if (modeExplanation) {
+    modeExplanation.textContent = MODE_EXPLANATIONS[modeSelect.value] || "";
+  }
 }
 
 function refreshTempReadout() {
@@ -504,15 +591,31 @@ askBtn.addEventListener("click", async () => {
     return;
   }
 
-  setStatus("Generating...", "busy");
+  appendConversationMessage("user", query);
+  appendConversationMessage("assistant", "Thinking...");
+  setConversationStatus("Waiting for response");
+
+  const isMock = document.getElementById("mockToggle").checked;
+  setStatus(isMock ? "Mock Generating..." : "Ollama Generating...", "busy");
   askBtn.disabled = true;
 
-  try {
+    try {
     const result = await requestGraphAnswer(query);
     const creativityPenalty = Number(temperature.value) * 0.06;
 
-    answerBox.textContent = result.text;
+    updateLastAssistantMessage(result.text);
+    answerBox.innerHTML = window.marked ? marked.parse(result.text) : result.text;
     renderCitations(result.citations);
+
+    let modelStr = result.modelUsed === "ollama" ? "Ollama" : "Mock (Bypass/Fallback)";
+    modelPill.textContent = `Model: ${modelStr}`;
+    if (result.modelUsed === "ollama") {
+      modelPill.style.color = "var(--green-4)";
+      modelPill.style.borderColor = "var(--green-4)";
+    } else {
+      modelPill.style.color = "inherit";
+      modelPill.style.borderColor = "inherit";
+    }
 
     if (result.tokenTotal > 0) {
       tokenPill.textContent = `Tokens: ${result.tokenTotal}`;
@@ -525,12 +628,18 @@ askBtn.addEventListener("click", async () => {
     setMetric(result.bleu - creativityPenalty, bleuBar, bleuValue);
     setMetric(result.rouge - creativityPenalty / 2, rougeBar, rougeValue);
     updateLiveRadar(query, result.radarSnippets || []);
+    setConversationStatus("Response received");
     setStatus(result.status === "abstained" ? "Abstained" : "Done");
   } catch (_error) {
     // Fallback keeps the demo usable when backend is not running.
     const fallback = simulateAnswer(query, modeSelect.value);
-    answerBox.textContent = fallback.text;
+    updateLastAssistantMessage(fallback.text);
+    answerBox.innerHTML = window.marked ? marked.parse(fallback.text) : fallback.text;
     renderCitations(fallback.citations);
+
+    modelPill.textContent = "Model: Offline Demo";
+    modelPill.style.color = "inherit";
+    modelPill.style.borderColor = "inherit";
 
     const outputTokens = tokensApprox(fallback.text);
     const inputTokens = tokensApprox(query);
@@ -539,6 +648,7 @@ askBtn.addEventListener("click", async () => {
     setMetric(fallback.bleu, bleuBar, bleuValue);
     setMetric(fallback.rouge, rougeBar, rougeValue);
     updateLiveRadar(query, fallback.radarSnippets || []);
+    setConversationStatus("Offline demo response");
     setStatus("API offline - using local demo");
   } finally {
     askBtn.disabled = false;

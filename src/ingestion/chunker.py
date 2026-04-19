@@ -91,7 +91,10 @@ def _validate_chunk_config(window_tokens: int, stride_tokens: int) -> None:
 
 
 def _normalize_text(text: str) -> str:
-    return re.sub(r"\s+", " ", text).strip()
+    # Preserve blank lines but collapse horizontal whitespace
+    cleaned = re.sub(r"[ \t\r]+", " ", text)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
 
 
 def _count_tokens(text: str) -> int:
@@ -106,7 +109,7 @@ def _split_sentences(text: str) -> list[str]:
     if not normalized:
         return []
 
-    sentences = re.split(r"(?<=[.!?])\s+", normalized)
+    sentences = re.split(r"(?<!\bDr\.)(?<!\bMr\.)(?<!\bMs\.)(?<!\bMrs\.)(?<!\bProf\.)(?<!\be\.g\.)(?<!\bi\.e\.)(?<!\bvs\.)(?<=[.!?])\s+", normalized)
     return [sentence for sentence in sentences if sentence]
 
 

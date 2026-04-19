@@ -38,7 +38,7 @@ class OllamaClientTests(unittest.TestCase):
         self.assertEqual(result, "Paris")
         mocked_generate.assert_called_once_with(
             model="gemma3:4b",
-            prompt="Question: What is the capital of France?\n\nAnswer: ",
+            prompt="<start_of_turn>user\nQuestion: What is the capital of France?\n\nAnswer: <end_of_turn>\n<start_of_turn>model\n",
             stream=False,
             raw=True,
             options={
