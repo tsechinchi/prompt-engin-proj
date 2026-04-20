@@ -354,18 +354,21 @@ input[type="range"] {
   margin-top: 0.7rem;
 }
 
-.compare-grid {
+.compare-grid,
+.evaluation-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .compare-grid article,
-.compare-summary-grid article {
+.compare-summary-grid article,
+.evaluation-grid article {
   max-height: 240px;
   overflow-y: auto;
 }
 
 .compare-grid article p,
-.compare-summary-grid article p {
+.compare-summary-grid article p,
+.evaluation-grid article p {
   white-space: pre-wrap;
   word-break: break-word;
 }

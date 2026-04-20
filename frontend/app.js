@@ -16,6 +16,9 @@ const primaryModeTitle = document.getElementById("primaryModeTitle");
 const comparisonModeTitle = document.getElementById("comparisonModeTitle");
 const primaryModeSnippet = document.getElementById("primaryModeSnippet");
 const comparisonModeSnippet = document.getElementById("comparisonModeSnippet");
+const qualityComparison = document.getElementById("qualityComparison");
+const tokenComparison = document.getElementById("tokenComparison");
+const overallComparison = document.getElementById("overallComparison");
 const modeBadge = document.getElementById("modeBadge");
 const tempReadout = document.getElementById("tempReadout");
 const conversationPane = document.getElementById("conversationPane");
@@ -490,7 +493,7 @@ async function requestComparisonSummary(query, primaryMode, compareMode, primary
       compare_mode: compareMode,
       primary_text: primaryText,
       compare_text: compareText,
-      use_mock_corpus: USE_MOCK_CORPUS,
+      history: getHistoryPayload(),
     }),
   });
 
@@ -522,6 +525,82 @@ function updateModeComparison(primaryMode, primaryResult, compareMode, compareRe
   if (comparisonModeSnippet) {
     comparisonModeSnippet.textContent = normalize(comparisonText);
   }
+
+  if (qualityComparison) {
+    const primaryQuality = primaryResult ? averageQuality(primaryResult.bleu, primaryResult.rouge) : null;
+    const compareQuality = compareMode && compareResult ? averageQuality(compareResult.bleu, compareResult.rouge) : null;
+
+    if (!compareMode) {
+      qualityComparison.textContent = "No comparison mode selected.";
+    } else if (!compareResult) {
+      qualityComparison.textContent = "Comparison not available for the selected mode.";
+    } else {
+      const better = compareQuality > primaryQuality ? "comparison" : compareQuality < primaryQuality ? "primary" : "both equally";
+      qualityComparison.textContent = [
+        `Primary quality: ${formatQuality(primaryQuality)} (BLEU ${formatNumber(primaryResult.bleu)}, ROUGE ${formatNumber(primaryResult.rouge)})`,
+        `Comparison quality: ${formatQuality(compareQuality)} (BLEU ${formatNumber(compareResult.bleu)}, ROUGE ${formatNumber(compareResult.rouge)})`,
+        `Better quality: ${better}`,
+      ].join("\n");
+    }
+  }
+
+  if (tokenComparison) {
+    const primaryTokens = primaryResult?.tokenTotal ?? null;
+    const compareTokens = compareMode && compareResult ? compareResult.tokenTotal : null;
+
+    if (!compareMode) {
+      tokenComparison.textContent = "No comparison mode selected.";
+    } else if (!compareResult) {
+      tokenComparison.textContent = "Comparison not available for the selected mode.";
+    } else {
+      const winner = compareTokens < primaryTokens ? "comparison" : compareTokens > primaryTokens ? "primary" : "both equal";
+      tokenComparison.textContent = [
+        `Primary tokens: ${primaryTokens}`,
+        `Comparison tokens: ${compareTokens}`,
+        `Better token usage: ${winner}`,
+      ].join("\n");
+    }
+  }
+
+  if (overallComparison) {
+    if (!compareMode) {
+      overallComparison.textContent = "No comparison mode selected.";
+    } else if (!compareResult) {
+      overallComparison.textContent = "Overall comparison not available for the selected mode.";
+    } else {
+      const primaryQuality = averageQuality(primaryResult.bleu, primaryResult.rouge);
+      const compareQuality = averageQuality(compareResult.bleu, compareResult.rouge);
+      const qualityDelta = compareQuality - primaryQuality;
+      const tokenDelta = (primaryResult.tokenTotal ?? 0) - (compareResult.tokenTotal ?? 0);
+      let overall = "primary";
+      if (qualityDelta > 0.05 && tokenDelta > 0) {
+        overall = "comparison";
+      } else if (qualityDelta < -0.05 && tokenDelta < 0) {
+        overall = "primary";
+      } else if (Math.abs(qualityDelta) < 0.05 && Math.abs(tokenDelta) < 20) {
+        overall = "too close to call";
+      } else if (qualityDelta > 0.05) {
+        overall = "comparison";
+      } else if (tokenDelta > 20) {
+        overall = "comparison";
+      } else {
+        overall = "primary";
+      }
+      overallComparison.textContent = `Overall better mode: ${overall}. Quality advantage: ${formatQuality(compareQuality - primaryQuality)}. Token delta: ${tokenDelta > 0 ? `comparison saved ${tokenDelta}` : tokenDelta < 0 ? `primary saved ${-tokenDelta}` : "equal"}.`;
+    }
+  }
+}
+
+function averageQuality(bleu, rouge) {
+  return (Number(bleu) + Number(rouge)) / 2;
+}
+
+function formatQuality(value) {
+  return value != null ? formatNumber(value) : "N/A";
+}
+
+function formatNumber(value) {
+  return Number(value).toFixed(2);
 }
 
 function setStatus(text, mode = "ready") {
@@ -635,10 +714,33 @@ if (clearConversationBtn) {
     modelPill.style.color = "inherit";
     modelPill.style.borderColor = "inherit";
     tokenPill.textContent = "Tokens: 0";
-    
+
+    compareSummary.textContent = "";
+    if (primaryModeTitle) {
+      primaryModeTitle.textContent = "Primary mode:";
+    }
+    if (comparisonModeTitle) {
+      comparisonModeTitle.textContent = "Comparison mode: none";
+    }
+    if (primaryModeSnippet) {
+      primaryModeSnippet.textContent = "";
+    }
+    if (comparisonModeSnippet) {
+      comparisonModeSnippet.textContent = "";
+    }
+    if (qualityComparison) {
+      qualityComparison.textContent = "";
+    }
+    if (tokenComparison) {
+      tokenComparison.textContent = "";
+    }
+    if (overallComparison) {
+      overallComparison.textContent = "";
+    }
+
     // Clear query input
     queryInput.value = "";
-    
+
     setStatus("Ready. Cleared all previous outputs.");
   });
 }

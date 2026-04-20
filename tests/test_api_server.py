@@ -67,6 +67,22 @@ class ApiServerTests(unittest.TestCase):
             self.assertTrue(body["citations"])
             self.assertIn("bleu", body["quality"])
 
+    def test_ask_endpoint_accepts_baseline_mode(self) -> None:
+        payload = {
+            "query": "Hello world",
+            "mode": "baseline",
+            "temperature": 0.3,
+            "uploaded_docs": [],
+        }
+
+        response = self.client.post("/api/ask", json=payload)
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertIsInstance(body["answer"], str)
+        self.assertNotEqual(body["answer"], "")
+        self.assertIn("bleu", body["quality"])
+        self.assertIn("total_tokens", body["tokens"])
+
     def test_compare_endpoint_returns_summary(self) -> None:
         payload = {
             "query": "What is the key difference between the two answers?",

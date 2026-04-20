@@ -57,6 +57,7 @@ class CompareRequest(BaseModel):
     compare_mode: str
     primary_text: str
     compare_text: str
+    history: list[dict[str, str]] = Field(default_factory=list)
 
 
 class CompareResponse(BaseModel):
@@ -151,11 +152,22 @@ def create_app() -> FastAPI:
     def compare(payload: CompareRequest) -> CompareResponse:
         prompt = (
             "You are an expert assistant comparing two answer drafts. "
-            "Use the user question and the two answers to produce a very clean, concise bullet-point summary of their differences. "
+            "Use the user question, the conversation history, and the two answers to produce a very clean, concise bullet-point summary of their differences. "
             "Focus on which answer is more factual, more concise, and which one includes extra key details. "
             "Do not invent new information beyond the text provided. "
             "Output only bullet points, with no additional explanation.\n\n"
             f"User question: {payload.query}\n\n"
+        )
+
+        if payload.history:
+            prompt += "Conversation history:\n"
+            for message in payload.history:
+                role = message.get("role", "").capitalize()
+                content = message.get("content", "")
+                prompt += f"{role}: {content}\n"
+            prompt += "\n"
+
+        prompt += (
             f"Primary mode: {payload.primary_mode}\n"
             f"Primary answer:\n{payload.primary_text}\n\n"
             f"Comparison mode: {payload.compare_mode}\n"

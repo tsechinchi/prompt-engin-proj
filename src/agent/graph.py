@@ -136,12 +136,19 @@ def _make_retrieve_node():
 
 
 def _aggregate_node(state: AgentState) -> AgentState:
-    fused_hits = fuse_scores(
-        state.get("bm25_hits", []),
-        state.get("vector_hits", []),
-        bm25_weight=state.get("bm25_weight", 0.4),
-        vector_weight=state.get("vector_weight", 0.6),
-    )
+    bm25_weight = state.get("bm25_weight", 0.4)
+    vector_weight = state.get("vector_weight", 0.6)
+
+    if bm25_weight == 0 and vector_weight == 0:
+        fused_hits: list[tuple[str, float]] = []
+    else:
+        fused_hits = fuse_scores(
+            state.get("bm25_hits", []),
+            state.get("vector_hits", []),
+            bm25_weight=bm25_weight,
+            vector_weight=vector_weight,
+        )
+
     top_k = state.get("top_k", 5)
     snippets = [text for text, _score in fused_hits[:top_k]]
     aggregated_context = "\n\n".join(snippets).strip()
