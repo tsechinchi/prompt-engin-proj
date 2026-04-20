@@ -1,187 +1,84 @@
-# HKBU Signal Desk (Study Companion)
+﻿# HKBU Study Companion
 
-An advanced Agentic Retrieval-Augmented Generation (RAG) system and Study Companion built for prompt engineering and information retrieval evaluation. This full-stack application features a FastAPI backend orchestrating LangGraph workflows, a bespoke hybrid search (BM25 + Semantic Vector) pipeline, and a modern, responsive frontend (Signal Desk) for live document analysis.
+A lightweight prompt-engineering and retrieval-augmented generation (RAG) prototype.
 
-## Setup With `uv`
+This repository combines:
 
-This project is designed to work well with [`uv`](https://docs.astral.sh/uv/).
+- a FastAPI backend in `src/api/server.py`
+- Ollama-backed generation via `src/generation/ollama_client.py`
+- lexical and semantic retrieval in `src/retrieval/`
+- document ingestion and chunking in `src/ingestion/`
+- conversation memory in `src/memory/`
+- a frontend prototype in `frontend/`
+- notebooks and experiments in `notebooks/`
 
-1. Install `uv` if you do not already have it.
-2. Sync the environment:
+## System setup
 
-```bash
-uv sync
+### 1. Install Python
+
+Use Python 3.11 or 3.12. On Windows, create a virtual environment from the project root:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
 ```
 
-3. Add a package when you need one:
+### 2. Install Python dependencies
 
-```bash
-uv add <package-name>
+```powershell
+pip install -r requirements.txt
 ```
 
-`uv sync` keeps the environment aligned with the project files, and `uv add` updates dependencies for you.
+Optionally install the package in editable mode:
 
-This project now prefers `faiss-gpu-cu12` on Linux and falls back to `faiss-cpu` on non-Linux platforms. That keeps `uv sync` working across your machine and a future CUDA setup.
-
-## Project TODO
-
-See [`PROJECT_TODO.md`](PROJECT_TODO.md) for the prioritized checklist.
-
-## Structure
-
-### Source code
-
-- `src/ingestion/`: document loading and chunking
-- `src/retrieval/`: BM25, vector search, and hybrid ranking
-- `src/prompt/`: prompt assembly helpers and reusable templates
-- `src/generation/`: Ollama wrapper and generation controls
-- `src/memory/`: conversation state and history handling
-- `src/evaluation/`: quality and token-usage tracking
-- `src/agent/`: optional LangGraph orchestration, tools, and HITL
-
-### Project files
-
-- `notebooks/00_ollama_raw_template.ipynb`: provided raw Ollama completion template
-- `notebooks/01_baseline_no_rag.ipynb`: prompt-only baseline
-- `notebooks/02_rag_pipeline.ipynb`: hybrid RAG pipeline
-- `notebooks/03_evaluation.ipynb`: baseline vs RAG evaluation
-- `data/`: local source documents and raw ingested files
-- `report/`: report notes and export helpers before the final PDF
-
-## Quick Start
-
-### Prerequisites
-
-- Python 3.11 or higher
-- `uv` package manager ([install here](https://docs.astral.sh/uv/))
-- **Ollama**: Local language model runner ([install here](https://ollama.com/download))
-  - ⚠️ **CRITICAL: You MUST install `gemma3:4b`** as it is the default model backing the generation pipeline.
-  - Run the following in your terminal: `ollama pull gemma3:4b`
-  - *(Optional)* We also use `qwen3.5:4b` for testing: `ollama pull qwen3.5:4b`
-
-### Installation
-
-1. **Clone and enter the project directory:**
-
-```bash
-cd prompt-engin-proj
+```powershell
+pip install -e .
 ```
 
-2. **Sync dependencies with `uv`:**
+### 3. Install and run Ollama
 
-```bash
-uv sync
+This project uses `ollama` for local model generation. Make sure the Ollama runtime is installed and available on your PATH.
+
+```powershell
+ollama serve
+ollama pull gemma3:4b
 ```
 
-This installs all required packages listed in `pyproject.toml`.
+If you prefer a different local model, update `model` in requests or notebook cells.
 
-### Launch the Full System
+### 4. Run the backend API
 
-#### Option 1: API Server + Frontend (Recommended)
+From the project root:
 
-**Terminal 1 – Backend API:**
-
-```bash
+```powershell
 python run_api.py
 ```
 
-Expected output:
-```
-INFO:     Uvicorn running on http://0.0.0.0:8000
-```
+The backend listens on `http://localhost:8000` by default.
 
-**Terminal 2 – Frontend UI:**
+### 5. Run the frontend prototype
 
-```bash
+In a second terminal:
+
+```powershell
 cd frontend
 python -m http.server 4173
 ```
 
-Expected output:
-```
-Serving HTTP on 0.0.0.0 port 4173
-```
+Open `http://localhost:4173` in your browser.
 
-**Open in browser:**
 
-- Frontend: http://localhost:4173
+## Quick start
 
-The frontend will connect to the API at `http://localhost:8000` by default.
+- Start Ollama
+- Start the backend with `python run_api.py`
+- Serve the frontend from `frontend/`
+- Open the UI at `http://localhost:4173`
 
-#### Option 2: API Only (Development/Testing)
+## Notes
 
-```bash
-python run_api.py
-```
-
-Test the API health endpoint:
-
-```bash
-curl http://localhost:8000/api/health
-# Response: {"status":"ok"}
-```
-
-### Run Tests
-
-```bash
-python -m pytest tests/ -v
-```
-
-Expected: **37 tests pass**
-
-### Run Notebooks
-
-Execute the evaluation notebooks:
-
-```bash
-# Baseline (no RAG)
-jupyter notebook notebooks/01_baseline_no_rag.ipynb
-
-# RAG pipeline
-jupyter notebook notebooks/02_rag_pipeline.ipynb
-
-# Evaluation & comparison
-jupyter notebook notebooks/03_evaluation.ipynb
-```
-
-### Verify Installation
-
-Quick sanity check:
-
-```bash
-python -c "
-from src.ingestion import load_documents, chunk_documents
-from src.retrieval import BM25Retriever, VectorRetriever, fuse_scores
-from src.agent import build_graph
-from src.api import app
-print('All modules loaded successfully!')
-"
-```
-
-## Using the Frontend
-
-1. **Upload documents** (PDF, DOCX, PPTX) or use mock corpus
-2. **Select retrieval mode:**
-   - `Baseline` – No retrieval (prompt only)
-   - `BM25` – Lexical search only
-   - `Vector` – Semantic search only
-   - `Hybrid` – BM25 + Vector (recommended)
-3. **Adjust creativity slider** (temperature 0.0 to 1.0)
-4. **Click "Generate Answer"** to get results with citations
-
-### Environment Variables
-
-Optional: Store backend URL in browser localStorage:
-
-```javascript
-// In browser console
-localStorage.setItem("hkbu_api_base", "http://localhost:8000");
-localStorage.setItem("hkbu_use_mock_corpus", "true");  // for demo mode
-```
-
-## Next Steps
-
-1. Add custom source documents to `data/mock/` (PDF, DOCX, PPTX, TXT, MD format)
-2. Connect live Ollama model (set `use_mock_generation: false` in frontend)
-3. Write your report using `report/` templates
-4. Run evaluation notebooks to measure quality metrics
+- The backend exposes `/api/ask` and `/api/compare`.
+- The API uses uploaded documents and retrieval pipelines for hybrid study companion behavior.
+- If Ollama is not available, API generation may fail and return an error-safe message.
+- Use the notebooks in `notebooks/` for evaluation and experiments.
