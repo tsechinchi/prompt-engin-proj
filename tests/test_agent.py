@@ -152,7 +152,7 @@ class GraphTests(unittest.TestCase):
 
         self.assertEqual(result["status"], "abstained")
         self.assertTrue(result.get("retrieval_mismatch"))
-        self.assertIn("enough relevant context", result["final_output"].lower())
+        self.assertIn("the provider context cannot find in the uploaded document", result["final_output"].lower())
         self.assertEqual(len(generated_prompts), 2)
         self.assertIn("Retrieval context appears insufficient", generated_prompts[1])
         self.assertEqual(hitl_calls["count"], 1)

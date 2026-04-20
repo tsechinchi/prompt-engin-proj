@@ -1,5 +1,6 @@
 const queryInput = document.getElementById("queryInput");
 const modeSelect = document.getElementById("modeSelect");
+const compareModeSelect = document.getElementById("compareModeSelect");
 const modeExplanation = document.getElementById("modeExplanation");
 const temperature = document.getElementById("temperature");
 const fileUpload = document.getElementById("fileUpload");
@@ -7,18 +8,19 @@ const uploadList = document.getElementById("uploadList");
 const askBtn = document.getElementById("askBtn");
 const loadDemoBtn = document.getElementById("loadDemo");
 const statusText = document.getElementById("statusText");
-const answerBox = document.getElementById("answerBox");
 const citationList = document.getElementById("citationList");
 const tokenPill = document.getElementById("tokenPill");
 const modelPill = document.getElementById("modelPill");
-const timetableSignal = document.getElementById("timetableSignal");
-const newsSignal = document.getElementById("newsSignal");
+const compareSummary = document.getElementById("compareSummary");
+const primaryModeTitle = document.getElementById("primaryModeTitle");
+const comparisonModeTitle = document.getElementById("comparisonModeTitle");
+const primaryModeSnippet = document.getElementById("primaryModeSnippet");
+const comparisonModeSnippet = document.getElementById("comparisonModeSnippet");
+const qualityComparison = document.getElementById("qualityComparison");
+const tokenComparison = document.getElementById("tokenComparison");
+const overallComparison = document.getElementById("overallComparison");
 const modeBadge = document.getElementById("modeBadge");
 const tempReadout = document.getElementById("tempReadout");
-const bleuBar = document.getElementById("bleuBar");
-const rougeBar = document.getElementById("rougeBar");
-const bleuValue = document.getElementById("bleuValue");
-const rougeValue = document.getElementById("rougeValue");
 const conversationPane = document.getElementById("conversationPane");
 const conversationStatus = document.getElementById("conversationStatus");
 const clearConversationBtn = document.getElementById("clearConversationBtn");
@@ -48,13 +50,87 @@ const STOP_WORDS = new Set([
 ]);
 
 let uploadedDocs = [];
-let conversationHistory = [];
 
 if (window.marked) {
   window.marked.setOptions({
     breaks: true,
     gfm: true
   });
+}
+
+const conversationHistory = [];
+
+function normalizeChatText(text) {
+  return String(text || "")
+    .replace(/\r\n?/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function renderConversationMessage(message) {
+  const wrapper = document.createElement("div");
+  const roleClass = message.role === "user" ? "conversation-user" : "conversation-assistant";
+  wrapper.className = `conversation-message ${roleClass}`;
+
+  const label = document.createElement("div");
+  label.className = "conversation-role";
+  label.textContent = message.role === "user" ? "You" : "Assistant";
+
+  const content = document.createElement("div");
+  content.className = "conversation-content";
+  const cleanedText = normalizeChatText(message.content);
+
+  if (window.marked && message.role === "assistant") {
+    content.innerHTML = marked.parse(cleanedText);
+  } else {
+    content.textContent = cleanedText;
+  }
+
+  wrapper.append(label, content);
+  return wrapper;
+}
+
+function renderConversationPane() {
+  if (!conversationPane) return;
+
+  conversationPane.innerHTML = "";
+
+  if (!conversationHistory.length) {
+    const placeholder = document.createElement("p");
+    placeholder.className = "conversation-empty";
+    placeholder.textContent = "Start by asking a question to see the output here.";
+    conversationPane.appendChild(placeholder);
+    return;
+  }
+
+  for (const message of conversationHistory) {
+    conversationPane.appendChild(renderConversationMessage(message));
+  }
+  conversationPane.scrollTop = conversationPane.scrollHeight;
+}
+
+function addConversationMessage(role, content) {
+  conversationHistory.push({ role, content });
+  renderConversationPane();
+}
+
+function updateLastAssistantMessage(content) {
+  const lastMessage = conversationHistory[conversationHistory.length - 1];
+  if (!lastMessage || lastMessage.role !== "assistant") {
+    addConversationMessage("assistant", content);
+    return;
+  }
+  lastMessage.content = content;
+  renderConversationPane();
+}
+
+function clearConversationHistory() {
+  conversationHistory.length = 0;
+  renderConversationPane();
+}
+
+function setAssistantOutput(content) {
+  updateLastAssistantMessage(content);
 }
 
 function tokensApprox(text) {
@@ -158,46 +234,6 @@ function buildHelpfulUploadAnswer(query, snippets) {
   return `Best evidence from your uploads: ${shortExcerpt(primary.snippet)}`;
 }
 
-function updateLiveRadar(query = "", snippets = []) {
-  if (!uploadedDocs.length) {
-    timetableSignal.textContent =
-      "No source loaded yet. Upload PDF/DOCX/PPTX or connect fetch_hkbu_updates() for live timetable/news.";
-    newsSignal.textContent =
-      "Live Radar shows source health and retrieval confidence (parsed files, overlap, and possible date cues).";
-    return;
-  }
-
-  const parsedDocs = uploadedDocs.filter((doc) => doc.text);
-  const parsedCount = parsedDocs.length;
-  const totalKb = uploadedDocs.reduce((sum, doc) => sum + doc.sizeKb, 0);
-
-  if (!parsedCount) {
-    timetableSignal.textContent =
-      "Files uploaded but no readable text extracted. Try another file or verify parser/CDN access.";
-    newsSignal.textContent = `Upload payload detected: ${uploadedDocs.length} file(s), ${totalKb} KB.`;
-    return;
-  }
-
-  const topSnippet = snippets[0]?.snippet || parsedDocs[0].text;
-  const dateCue = topSnippet.match(
-    /\b(\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2})\b/i
-  );
-
-  if (dateCue) {
-    timetableSignal.textContent = `Potential schedule cue found: "${dateCue[0]}". Verify against official HKBU timetable.`;
-  } else {
-    timetableSignal.textContent = `Parsed ${parsedCount} file(s) (${totalKb} KB). Ask about deadlines, dates, or timetable for sharper retrieval.`;
-  }
-
-  if (query) {
-    const terms = queryTerms(query);
-    const topLower = topSnippet.toLowerCase();
-    const matchedTerms = terms.filter((term) => topLower.includes(term)).length;
-    newsSignal.textContent = `Query overlap: ${matchedTerms}/${terms.length || 1} terms in top evidence snippet.`;
-  } else {
-    newsSignal.textContent = "Radar ready. Enter a question to see retrieval overlap and confidence hints.";
-  }
-}
 
 function fileExtension(name) {
   const parts = name.toLowerCase().split(".");
@@ -332,14 +368,14 @@ function simulateAnswer(query, mode) {
   }
 
   const modeHint = {
-    baseline: "Baseline mode gives a generic response without retrieval evidence.",
-    bm25: "BM25 mode prioritizes lexical overlap from uploaded docs.",
-    vector: "Vector mode prioritizes semantic similarity across chunks.",
-    hybrid: "Hybrid mode fuses lexical and semantic scores for balance.",
+    baseline: "Non-RAG mode gives a generic response without retrieval evidence.",
+    lexical: "RAG (Lexical) mode uses BM25 keyword retrieval to answer from provided context.",
+    semantic: "RAG (Semantic) mode uses embedding-based retrieval to answer from provided context.",
+    hybrid: "RAG mode uses both keyword and semantic retrieval to answer from provided context.",
   };
 
   return {
-    text: `API fallback mode only. ${modeHint[mode]} Start backend with \"python run_api.py\" for graph-based answers, then re-run your query.`,
+    text: `API fallback mode only. ${modeHint[mode] || modeHint.hybrid} Start backend with \"python run_api.py\" for graph-based answers, then re-run your query.`,
     citations: [],
     bleu: 0.3,
     rouge: 0.35,
@@ -371,55 +407,6 @@ function renderCitations(items) {
   }
 }
 
-function renderConversationHistory() {
-  if (!conversationPane) {
-    return;
-  }
-
-  conversationPane.innerHTML = "";
-  if (!conversationHistory.length) {
-    const message = document.createElement("p");
-    message.className = "conversation-empty";
-    message.textContent = "Start by asking a question to see your conversation history here.";
-    conversationPane.appendChild(message);
-    return;
-  }
-
-  for (const item of conversationHistory) {
-    const message = document.createElement("article");
-    message.className = `conversation-message conversation-${item.role}`;
-
-    const badge = document.createElement("span");
-    badge.className = "conversation-role";
-    badge.textContent = item.role === "user" ? "Student" : "Assistant";
-
-    const content = document.createElement("div");
-    content.className = "conversation-content";
-    content.innerHTML = window.marked ? marked.parse(item.content) : item.content;
-
-    message.appendChild(badge);
-    message.appendChild(content);
-    conversationPane.appendChild(message);
-  }
-
-  conversationPane.scrollTop = conversationPane.scrollHeight;
-}
-
-function appendConversationMessage(role, content) {
-  conversationHistory.push({ role, content });
-  renderConversationHistory();
-}
-
-function updateLastAssistantMessage(content) {
-  for (let i = conversationHistory.length - 1; i >= 0; i -= 1) {
-    if (conversationHistory[i].role === "assistant") {
-      conversationHistory[i].content = content;
-      break;
-    }
-  }
-  renderConversationHistory();
-}
-
 function setConversationStatus(text) {
   if (!conversationStatus) {
     return;
@@ -427,20 +414,25 @@ function setConversationStatus(text) {
   conversationStatus.textContent = text;
 }
 
-function setMetric(value, barEl, textEl) {
-  const bounded = Math.max(0, Math.min(1, value));
-  barEl.value = bounded;
-  textEl.textContent = bounded.toFixed(2);
+function getHistoryPayload() {
+  const history = [...conversationHistory];
+
+  if (history.length && history[history.length - 1]?.role === "assistant" && history[history.length - 1]?.content === "Thinking...") {
+    history.pop();
+  }
+
+  if (history.length && history[history.length - 1]?.role === "user") {
+    history.pop();
+  }
+
+  return history;
 }
 
-function buildApiPayload(query) {
-  const isMock = document.getElementById("mockToggle").checked;
+function buildApiPayload(query, mode) {
   return {
     query,
-    mode: modeSelect.value,
+    mode,
     temperature: Number(temperature.value),
-    top_k: 5,
-    use_mock_generation: isMock,
     use_mock_corpus: USE_MOCK_CORPUS,
     uploaded_docs: uploadedDocs
       .filter((doc) => doc.text)
@@ -448,20 +440,17 @@ function buildApiPayload(query) {
         name: doc.name,
         text: doc.text,
       })),
-    history: conversationHistory.map((item) => ({
-      role: item.role,
-      content: item.content,
-    })),
+    history: getHistoryPayload(),
   };
 }
 
-async function requestGraphAnswer(query) {
+async function requestGraphAnswer(query, mode) {
   const response = await fetch(`${API_BASE}/api/ask`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(buildApiPayload(query)),
+    body: JSON.stringify(buildApiPayload(query, mode)),
   });
 
   if (!response.ok) {
@@ -474,13 +463,144 @@ async function requestGraphAnswer(query) {
     citations: Array.isArray(data.citations) ? data.citations : [],
     bleu: Number(data.quality?.bleu ?? 0.5),
     rouge: Number(data.quality?.rouge_l ?? 0.55),
-    radarSnippets: Array.isArray(data.radar_snippets)
-      ? data.radar_snippets.map((item) => ({ snippet: String(item.snippet || "") }))
-      : [],
     tokenTotal: Number(data.tokens?.total_tokens ?? 0),
     status: String(data.status || "done"),
     modelUsed: String(data.model_used || "unknown"),
   };
+}
+
+async function requestComparisonSummary(query, primaryMode, compareMode, primaryText, compareText) {
+  if (!compareMode) {
+    return {
+      summary: "No comparison mode selected.",
+    };
+  }
+
+  if (compareMode === primaryMode) {
+    return {
+      summary: `Primary and comparison mode are the same (${primaryMode}), so there is no difference to analyze.`,
+    };
+  }
+
+  const response = await fetch(`${API_BASE}/api/compare`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      query,
+      primary_mode: primaryMode,
+      compare_mode: compareMode,
+      primary_text: primaryText,
+      compare_text: compareText,
+      history: getHistoryPayload(),
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Comparison request failed (${response.status})`);
+  }
+
+  const data = await response.json();
+  return {
+    summary: String(data.summary || "No comparison summary returned."),
+  };
+}
+
+function updateModeComparison(primaryMode, primaryResult, compareMode, compareResult) {
+  if (primaryModeTitle) {
+    primaryModeTitle.textContent = `Primary mode: ${primaryMode}`;
+  }
+
+  if (comparisonModeTitle) {
+    comparisonModeTitle.textContent = compareMode ? `Comparison mode: ${compareMode}` : "Comparison mode: none";
+  }
+
+  const primaryText = primaryResult?.text || "No output available.";
+  const comparisonText = compareMode ? (compareResult?.text || "No comparison output available.") : "";
+
+  if (primaryModeSnippet) {
+    primaryModeSnippet.textContent = normalize(primaryText);
+  }
+  if (comparisonModeSnippet) {
+    comparisonModeSnippet.textContent = normalize(comparisonText);
+  }
+
+  if (qualityComparison) {
+    const primaryQuality = primaryResult ? averageQuality(primaryResult.bleu, primaryResult.rouge) : null;
+    const compareQuality = compareMode && compareResult ? averageQuality(compareResult.bleu, compareResult.rouge) : null;
+
+    if (!compareMode) {
+      qualityComparison.textContent = "No comparison mode selected.";
+    } else if (!compareResult) {
+      qualityComparison.textContent = "Comparison not available for the selected mode.";
+    } else {
+      const better = compareQuality > primaryQuality ? "comparison" : compareQuality < primaryQuality ? "primary" : "both equally";
+      qualityComparison.textContent = [
+        `Primary quality: ${formatQuality(primaryQuality)} (BLEU ${formatNumber(primaryResult.bleu)}, ROUGE ${formatNumber(primaryResult.rouge)})`,
+        `Comparison quality: ${formatQuality(compareQuality)} (BLEU ${formatNumber(compareResult.bleu)}, ROUGE ${formatNumber(compareResult.rouge)})`,
+        `Better quality: ${better}`,
+      ].join("\n");
+    }
+  }
+
+  if (tokenComparison) {
+    const primaryTokens = primaryResult?.tokenTotal ?? null;
+    const compareTokens = compareMode && compareResult ? compareResult.tokenTotal : null;
+
+    if (!compareMode) {
+      tokenComparison.textContent = "No comparison mode selected.";
+    } else if (!compareResult) {
+      tokenComparison.textContent = "Comparison not available for the selected mode.";
+    } else {
+      const winner = compareTokens < primaryTokens ? "comparison" : compareTokens > primaryTokens ? "primary" : "both equal";
+      tokenComparison.textContent = [
+        `Primary tokens: ${primaryTokens}`,
+        `Comparison tokens: ${compareTokens}`,
+        `Better token usage: ${winner}`,
+      ].join("\n");
+    }
+  }
+
+  if (overallComparison) {
+    if (!compareMode) {
+      overallComparison.textContent = "No comparison mode selected.";
+    } else if (!compareResult) {
+      overallComparison.textContent = "Overall comparison not available for the selected mode.";
+    } else {
+      const primaryQuality = averageQuality(primaryResult.bleu, primaryResult.rouge);
+      const compareQuality = averageQuality(compareResult.bleu, compareResult.rouge);
+      const qualityDelta = compareQuality - primaryQuality;
+      const tokenDelta = (primaryResult.tokenTotal ?? 0) - (compareResult.tokenTotal ?? 0);
+      let overall = "primary";
+      if (qualityDelta > 0.05 && tokenDelta > 0) {
+        overall = "comparison";
+      } else if (qualityDelta < -0.05 && tokenDelta < 0) {
+        overall = "primary";
+      } else if (Math.abs(qualityDelta) < 0.05 && Math.abs(tokenDelta) < 20) {
+        overall = "too close to call";
+      } else if (qualityDelta > 0.05) {
+        overall = "comparison";
+      } else if (tokenDelta > 20) {
+        overall = "comparison";
+      } else {
+        overall = "primary";
+      }
+      overallComparison.textContent = `Overall better mode: ${overall}. Quality advantage: ${formatQuality(compareQuality - primaryQuality)}. Token delta: ${tokenDelta > 0 ? `comparison saved ${tokenDelta}` : tokenDelta < 0 ? `primary saved ${-tokenDelta}` : "equal"}.`;
+    }
+  }
+}
+
+function averageQuality(bleu, rouge) {
+  return (Number(bleu) + Number(rouge)) / 2;
+}
+
+function formatQuality(value) {
+  return value != null ? formatNumber(value) : "N/A";
+}
+
+function formatNumber(value) {
+  return Number(value).toFixed(2);
 }
 
 function setStatus(text, mode = "ready") {
@@ -492,10 +612,10 @@ function setStatus(text, mode = "ready") {
 }
 
 const MODE_EXPLANATIONS = {
-  "baseline": "Baseline (no RAG): Generates an answer strictly from the model's internal base knowledge. Does not use retrieved documents.",
-  "bm25": "BM25: Retrieves documents based strictly on keyword matching and frequency. Ideal for finding exact queries like names or acronyms.",
-  "vector": "Vector: Retrieves documents based on semantic meaning using embeddings. Ideal for finding answers to conceptually phrased queries.",
-  "hybrid": "Hybrid: Blends BM25 for precise keyword hits and Vector search for semantic understanding. It mixes the two for robust retrieval."
+  "baseline": "Non-RAG: Generates an answer strictly from the model's internal base knowledge. Does not use retrieved documents.",
+  "lexical": "RAG (Lexical): Uses BM25 keyword retrieval to answer from uploaded or mock documents.",
+  "semantic": "RAG (Semantic): Uses embedding-based retrieval to answer from uploaded or mock documents.",
+  "hybrid": "RAG (Hybrid): Mixes BM25 and semantic retrieval so answers are grounded in both lexical and embedding evidence."
 };
 
 function refreshModeBadge() {
@@ -578,8 +698,6 @@ fileUpload.addEventListener("change", async () => {
   } else {
     setStatus("Uploads added, but no text extracted");
   }
-
-  updateLiveRadar();
 });
 
 modeSelect.addEventListener("change", refreshModeBadge);
@@ -587,28 +705,43 @@ temperature.addEventListener("input", refreshTempReadout);
 
 if (clearConversationBtn) {
   clearConversationBtn.addEventListener("click", () => {
-    // Clear conversation
-    conversationHistory = [];
-    renderConversationHistory();
     setConversationStatus("Live (Cleared)");
     setTimeout(() => setConversationStatus("Live"), 2000);
 
-    // Clear output
-    answerBox.innerHTML = "Your answer will appear here.";
+    clearConversationHistory();
     citationList.innerHTML = "";
     modelPill.textContent = "Model: None";
     modelPill.style.color = "inherit";
     modelPill.style.borderColor = "inherit";
     tokenPill.textContent = "Tokens: 0";
-    
-    // Reset quality metrics
-    setMetric(0, bleuBar, bleuValue);
-    setMetric(0, rougeBar, rougeValue);
-    
+
+    compareSummary.textContent = "";
+    if (primaryModeTitle) {
+      primaryModeTitle.textContent = "Primary mode:";
+    }
+    if (comparisonModeTitle) {
+      comparisonModeTitle.textContent = "Comparison mode: none";
+    }
+    if (primaryModeSnippet) {
+      primaryModeSnippet.textContent = "";
+    }
+    if (comparisonModeSnippet) {
+      comparisonModeSnippet.textContent = "";
+    }
+    if (qualityComparison) {
+      qualityComparison.textContent = "";
+    }
+    if (tokenComparison) {
+      tokenComparison.textContent = "";
+    }
+    if (overallComparison) {
+      overallComparison.textContent = "";
+    }
+
     // Clear query input
     queryInput.value = "";
-    
-    setStatus("Ready. Cleared all previous conversation and outputs.");
+
+    setStatus("Ready. Cleared all previous outputs.");
   });
 }
 
@@ -619,24 +752,28 @@ askBtn.addEventListener("click", async () => {
     return;
   }
 
-  appendConversationMessage("user", query);
-  appendConversationMessage("assistant", "Thinking...");
+  addConversationMessage("user", query);
+  addConversationMessage("assistant", "Thinking...");
   setConversationStatus("Waiting for response");
 
-  const isMock = document.getElementById("mockToggle").checked;
-  setStatus(isMock ? "Mock Generating..." : "Ollama Generating...", "busy");
+  setStatus("Ollama Generating...", "busy");
   askBtn.disabled = true;
 
     try {
-    const result = await requestGraphAnswer(query);
+    const primaryMode = modeSelect.value;
+    const compareMode = compareModeSelect.value;
+    const resultPromise = requestGraphAnswer(query, primaryMode);
+    const comparisonPromise = compareMode && compareMode !== primaryMode
+      ? requestGraphAnswer(query, compareMode)
+      : Promise.resolve(null);
+
+    const [result, comparisonResult] = await Promise.all([resultPromise, comparisonPromise]);
     const creativityPenalty = Number(temperature.value) * 0.06;
 
     updateLastAssistantMessage(result.text);
-    answerBox.innerHTML = window.marked ? marked.parse(result.text) : result.text;
     renderCitations(result.citations);
 
-    let modelStr = result.modelUsed === "ollama" ? "Ollama" : "Mock (Bypass/Fallback)";
-    modelPill.textContent = `Model: ${modelStr}`;
+    modelPill.textContent = `Model: ${result.modelUsed === "ollama" ? "Ollama" : String(result.modelUsed || "unknown")}`;
     if (result.modelUsed === "ollama") {
       modelPill.style.color = "var(--green-4)";
       modelPill.style.borderColor = "var(--green-4)";
@@ -653,16 +790,29 @@ askBtn.addEventListener("click", async () => {
       tokenPill.textContent = `Tokens: ${inputTokens + outputTokens}`;
     }
 
-    setMetric(result.bleu - creativityPenalty, bleuBar, bleuValue);
-    setMetric(result.rouge - creativityPenalty / 2, rougeBar, rougeValue);
-    updateLiveRadar(query, result.radarSnippets || []);
+    updateModeComparison(primaryMode, result, compareMode, comparisonResult || { text: compareMode === primaryMode ? `Comparison mode is the same as primary (${compareMode}).` : "No comparison output available." });
+
+    try {
+      const summaryResult = await requestComparisonSummary(query, primaryMode, compareMode, result.text, comparisonResult?.text || "");
+      if (compareSummary) {
+        compareSummary.textContent = summaryResult.summary;
+      }
+    } catch (summaryError) {
+      if (compareSummary) {
+        compareSummary.textContent = "Comparison summary unavailable.";
+      }
+    }
+
     setConversationStatus("Response received");
     setStatus(result.status === "abstained" ? "Abstained" : "Done");
   } catch (_error) {
     // Fallback keeps the demo usable when backend is not running.
-    const fallback = simulateAnswer(query, modeSelect.value);
+    const primaryMode = modeSelect.value;
+    const compareMode = compareModeSelect.value;
+    const fallback = simulateAnswer(query, primaryMode);
+    const comparisonFallback = compareMode === primaryMode ? null : simulateAnswer(query, compareMode);
+
     updateLastAssistantMessage(fallback.text);
-    answerBox.innerHTML = window.marked ? marked.parse(fallback.text) : fallback.text;
     renderCitations(fallback.citations);
 
     modelPill.textContent = "Model: Offline Demo";
@@ -673,9 +823,14 @@ askBtn.addEventListener("click", async () => {
     const inputTokens = tokensApprox(query);
     tokenPill.textContent = `Tokens: ${inputTokens + outputTokens}`;
 
-    setMetric(fallback.bleu, bleuBar, bleuValue);
-    setMetric(fallback.rouge, rougeBar, rougeValue);
-    updateLiveRadar(query, fallback.radarSnippets || []);
+    updateModeComparison(primaryMode, fallback, compareMode, comparisonFallback || { text: compareMode === primaryMode ? `Comparison mode is the same as primary (${compareMode}).` : "No comparison output available." });
+    if (compareSummary) {
+      compareSummary.textContent = !compareMode
+        ? "No comparison mode selected."
+        : compareMode === primaryMode
+          ? `Primary and comparison mode are the same (${compareMode}), so there is no difference to analyze.`
+          : `Offline demo: only primary and comparison snippets are shown, no AI summary generated.`;
+    }
     setConversationStatus("Offline demo response");
     setStatus("API offline - using local demo");
   } finally {
@@ -686,6 +841,7 @@ askBtn.addEventListener("click", async () => {
 loadDemoBtn.addEventListener("click", () => {
   queryInput.value = "When is the add/drop deadline for CS101?";
   modeSelect.value = "hybrid";
+  compareModeSelect.value = "baseline";
   temperature.value = "0.3";
   refreshModeBadge();
   refreshTempReadout();
@@ -694,4 +850,4 @@ loadDemoBtn.addEventListener("click", () => {
 
 refreshModeBadge();
 refreshTempReadout();
-updateLiveRadar();
+renderConversationPane();

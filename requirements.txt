@@ -1,7 +1,4 @@
-﻿# Direct project dependencies for HKBU study companion
-# Use Python 3.11 or 3.12.
-
-faiss-gpu-cu12>=1.14.1; sys_platform == 'linux'
+﻿faiss-gpu-cu12>=1.14.1; sys_platform == 'linux'
 faiss-cpu>=1.13.2; sys_platform != 'linux'
 langchain>=1.2.14
 langchain-community>=0.4.1

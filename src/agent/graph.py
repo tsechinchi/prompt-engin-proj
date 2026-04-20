@@ -136,12 +136,19 @@ def _make_retrieve_node():
 
 
 def _aggregate_node(state: AgentState) -> AgentState:
-    fused_hits = fuse_scores(
-        state.get("bm25_hits", []),
-        state.get("vector_hits", []),
-        bm25_weight=state.get("bm25_weight", 0.4),
-        vector_weight=state.get("vector_weight", 0.6),
-    )
+    bm25_weight = state.get("bm25_weight", 0.4)
+    vector_weight = state.get("vector_weight", 0.6)
+
+    if bm25_weight == 0 and vector_weight == 0:
+        fused_hits: list[tuple[str, float]] = []
+    else:
+        fused_hits = fuse_scores(
+            state.get("bm25_hits", []),
+            state.get("vector_hits", []),
+            bm25_weight=bm25_weight,
+            vector_weight=vector_weight,
+        )
+
     top_k = state.get("top_k", 5)
     snippets = [text for text, _score in fused_hits[:top_k]]
     aggregated_context = "\n\n".join(snippets).strip()
@@ -199,11 +206,15 @@ def _assemble_node(state: AgentState) -> AgentState:
         "Use formatting like bolding and bulleted lists to make the output user-friendly.",
         "Format the response into distinct paragraphs with blank lines between them.",
         "Base your answer strictly on the provided context if available.",
-        "If the user is asking something not related to the RAG document, output ONLY 'The provider context cannot find in the uploaded document'. Do not include any other text.",
+        "If the user is asking something not related to the RAG document, output ONLY 'The provider context cannot find in the uploaded document'. Do not include any other text, headings, bullet lists, or follow-up suggestions.",
         "When referring to names of people, ALWAYS use their full names exactly as they appear in the provided context snippets (e.g., 'Dr. Shichao Ma' instead of just 'Dr. Shichao').",
         f"You MUST directly answer the user's core question: '{state['query']}'. Do not provide a generic summary of the text.",
-        "At the very end of your response, you MUST provide an 'Actionable next step' with a specific follow-up question the user could ask."
     ])
+
+    if not state.get("retrieval_mismatch", False):
+        constraints.append(
+            "At the very end of your response, you MUST provide an 'Actionable next step' with a specific follow-up question the user could ask."
+        )
     
     review_feedback = state.get("review_feedback", "").strip()
     if review_feedback:
