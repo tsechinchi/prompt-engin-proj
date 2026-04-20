@@ -125,7 +125,7 @@ h3 {
 
 .stage {
   display: grid;
-  grid-template-columns: 380px 1fr;
+  grid-template-columns: 520px 1fr;
   grid-template-rows: auto 1fr auto;
   gap: 1.5rem;
   padding-bottom: 1.5rem;
@@ -167,7 +167,8 @@ h3 {
 
 .panel-radar {
   grid-column: 2;
-  grid-row: 1;
+  grid-row: 1 / span 2;
+  align-self: stretch;
 }
 
 .panel-output {
@@ -353,6 +354,29 @@ input[type="range"] {
   margin-top: 0.7rem;
 }
 
+.compare-grid,
+.evaluation-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.compare-grid article,
+.compare-summary-grid article,
+.evaluation-grid article {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.compare-grid article p,
+.compare-summary-grid article p,
+.evaluation-grid article p {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.compare-summary-grid {
+  margin-top: 0.8rem;
+}
+
 .radar-grid article {
   border: 1px dashed #b8987a;
   border-radius: 12px;
@@ -436,7 +460,8 @@ progress {
 .conversation-pane {
   display: grid;
   gap: 0.85rem;
-  max-height: 420px;
+  max-height: 620px;
+  min-height: 340px;
   overflow-y: auto;
   margin-top: 0.8rem;
   padding-right: 0.5rem;
@@ -494,6 +519,10 @@ progress {
 }
 
 .conversation-content {
+  white-space: normal;
+}
+
+.conversation-user .conversation-content {
   white-space: pre-wrap;
 }
 

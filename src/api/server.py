@@ -30,13 +30,13 @@ class AskRequest(BaseModel):
     """Request schema for graph-backed answer generation."""
 
     query: str
-    mode: Literal["baseline", "bm25", "vector", "hybrid"] = "hybrid"
+    mode: Literal["baseline", "lexical", "semantic", "hybrid"] = "hybrid"
     temperature: float = 0.3
     top_k: int = 5
+    max_tokens: int = 200
     model: str = "gemma3:4b"
     uploaded_docs: list[UploadedDocPayload] = Field(default_factory=list)
     history: list[dict[str, str]] = Field(default_factory=list)
-    use_mock_generation: bool = False
     use_mock_corpus: bool = False
 
 
@@ -48,8 +48,20 @@ class AskResponse(BaseModel):
     citations: list[str]
     quality: dict[str, float]
     tokens: dict[str, int]
-    radar_snippets: list[dict[str, str]]
     model_used: str
+
+
+class CompareRequest(BaseModel):
+    query: str
+    primary_mode: str
+    compare_mode: str
+    primary_text: str
+    compare_text: str
+    history: list[dict[str, str]] = Field(default_factory=list)
+
+
+class CompareResponse(BaseModel):
+    summary: str
 
 
 def create_app() -> FastAPI:
@@ -103,6 +115,7 @@ def create_app() -> FastAPI:
                 "top_k": max(payload.top_k, 1),
                 "temperature": max(payload.temperature, 0.0),
                 "model": payload.model,
+                "num_predict": max(payload.max_tokens, 1),
                 "require_approval": False,
                 "bm25_weight": bm25_weight,
                 "vector_weight": vector_weight,
@@ -113,6 +126,7 @@ def create_app() -> FastAPI:
         )
 
         answer = str(result.get("final_output", "")).strip()
+        answer = _sanitize_abstention_answer(answer)
         if not answer:
             answer = "No answer generated."
 
@@ -125,20 +139,56 @@ def create_app() -> FastAPI:
             completion_tokens=max(1, _token_count(answer)),
         )
 
-        radar_snippets = [
-            {"snippet": _compress_text(snippet, max_chars=220), "source": "context"}
-            for snippet in context_snippets[:3]
-        ]
-
         return AskResponse(
             answer=answer,
             status=str(result.get("status", "approved")),
             citations=citations,
             quality=quality,
             tokens=usage,
-            radar_snippets=radar_snippets,
             model_used=generation_info["model_used"],
         )
+
+    @app.post("/api/compare", response_model=CompareResponse)
+    def compare(payload: CompareRequest) -> CompareResponse:
+        prompt = (
+            "You are an expert assistant comparing two answer drafts. "
+            "Use the user question, the conversation history, and the two answers to produce a very clean, concise bullet-point summary of their differences. "
+            "Focus on which answer is more factual, more concise, and which one includes extra key details. "
+            "Do not invent new information beyond the text provided. "
+            "Output only bullet points, with no additional explanation.\n\n"
+            f"User question: {payload.query}\n\n"
+        )
+
+        if payload.history:
+            prompt += "Conversation history:\n"
+            for message in payload.history:
+                role = message.get("role", "").capitalize()
+                content = message.get("content", "")
+                prompt += f"{role}: {content}\n"
+            prompt += "\n"
+
+        prompt += (
+            f"Primary mode: {payload.primary_mode}\n"
+            f"Primary answer:\n{payload.primary_text}\n\n"
+            f"Comparison mode: {payload.compare_mode}\n"
+            f"Comparison answer:\n{payload.compare_text}\n\n"
+            "Bullet-point summary:"
+        )
+
+        try:
+            summary_text = generate_raw(
+                prompt,
+                model="gemma3:4b",
+                temperature=0.3,
+                num_predict=200,
+            )
+        except Exception as e:
+            print(f"Ollama comparison generation failed: {repr(e)}")
+            summary_text = (
+                "Could not generate a comparison summary. Please try again when the Ollama service is available."
+            )
+
+        return CompareResponse(summary=summary_text.strip())
 
     return app
 
@@ -147,12 +197,12 @@ app = create_app()
 
 
 def _mode_weights(mode: str) -> tuple[float, float]:
-    if mode == "bm25":
-        return 1.0, 0.0
-    if mode == "vector":
-        return 0.0, 1.0
     if mode == "baseline":
-        return 0.4, 0.6
+        return 0.0, 0.0
+    if mode == "lexical":
+        return 1.0, 0.0
+    if mode == "semantic":
+        return 0.0, 1.0
     return 0.4, 0.6
 
 
@@ -198,10 +248,6 @@ def _should_abstain_on_mismatch(*, mode: str, has_uploaded_chunks: bool, has_any
 
 def _make_generate_fn(payload: AskRequest, generation_info: dict):
     def _generate(prompt: str, **kwargs: object) -> str:
-        if payload.use_mock_generation:
-            generation_info["model_used"] = "mock"
-            return _mock_generate_from_prompt(prompt, payload.query)
-
         try:
             res = generate_raw(
                 prompt,
@@ -213,10 +259,17 @@ def _make_generate_fn(payload: AskRequest, generation_info: dict):
             return res
         except Exception as e:
             print(f"Ollama generation failed: {repr(e)}")
-            generation_info["model_used"] = "mock_fallback"
-            return _mock_generate_from_prompt(prompt, payload.query)
+            generation_info["model_used"] = "ollama_error"
+            return "Ollama generation failed. Please try again later."
 
     return _generate
+
+
+def _sanitize_abstention_answer(answer: str) -> str:
+    marker = "The provider context cannot find in the uploaded document"
+    if re.search(re.escape(marker), answer, flags=re.IGNORECASE):
+        return marker
+    return answer
 
 
 @lru_cache(maxsize=1)
@@ -254,48 +307,6 @@ def _uploaded_chunk_records(uploaded_docs: list[UploadedDocPayload]) -> list[dic
         return []
 
     return list(chunk_documents(loaded_documents, window_tokens=180, stride_tokens=40))
-
-
-def _mock_generate_from_prompt(prompt: str, query: str) -> str:
-    snippets = _extract_snippets_from_prompt(prompt)
-    if not snippets:
-        return "I could not find enough retrieved evidence. Try uploading relevant documents or asking a more specific question."
-
-    summary = _compress_text(snippets[0], max_chars=300)
-    key_points = [_compress_text(snippet, max_chars=170) for snippet in snippets[:3]]
-
-    lines = [
-        f"Summary: {summary}",
-        "",
-        "Key points:",
-    ]
-    for point in key_points:
-        lines.append(f"- {point}")
-
-    lines.extend(
-        [
-            "",
-            f"Actionable next step: Ask a follow-up about one specific concept from your question (\"{_compress_text(query, max_chars=90)}\") to get a tighter answer.",
-        ]
-    )
-
-    return "\n".join(lines).strip()
-
-
-def _extract_snippets_from_prompt(prompt: str) -> list[str]:
-    match = re.search(r"Context Snippets:\n(.*?)\n\nConstraints:", prompt, flags=re.DOTALL)
-    if not match:
-        return []
-
-    snippets: list[str] = []
-    for raw_line in match.group(1).splitlines():
-        line = raw_line.strip()
-        if not line:
-            continue
-        line = re.sub(r"^\d+\.\s*", "", line)
-        if line:
-            snippets.append(line)
-    return snippets
 
 
 def _compress_text(text: str, *, max_chars: int) -> str:

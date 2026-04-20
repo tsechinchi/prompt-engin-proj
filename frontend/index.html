@@ -43,33 +43,37 @@
         <textarea
           id="queryInput"
           placeholder="Ask a policy, timetable, exam, or deadline question..."
-          rows="5"
+          rows="3"
         ></textarea>
 
         <div class="grid-2">
           <div>
             <label for="modeSelect">Mode</label>
             <select id="modeSelect">
-              <option value="baseline">Baseline (No RAG)</option>
-              <option value="bm25">BM25</option>
-              <option value="vector">Vector</option>
-              <option value="hybrid" selected>Hybrid (BM25 + Vector)</option>
+              <option value="baseline">Non-RAG</option>
+              <option value="lexical">RAG (Lexical)</option>
+              <option value="semantic">RAG (Semantic)</option>
+              <option value="hybrid" selected>RAG (Hybrid)</option>
             </select>
             <p id="modeExplanation" class="hint" style="margin-top: 0.5rem; font-size: 0.85em;"></p>
           </div>
           <div>
-            <label for="temperature">Creativity</label>
-            <div class="range-wrap">
-              <input id="temperature" type="range" min="0" max="1" step="0.1" value="0.3" />
-              <strong id="tempReadout">0.3</strong>
-            </div>
+            <label for="compareModeSelect">Compare mode</label>
+            <select id="compareModeSelect">
+              <option value="" selected>None</option>
+              <option value="baseline">Non-RAG</option>
+              <option value="lexical">RAG (Lexical)</option>
+              <option value="semantic">RAG (Semantic)</option>
+              <option value="hybrid">RAG (Hybrid)</option>
+            </select>
+            <p class="hint" style="margin-top: 0.5rem; font-size: 0.85em;">Leave blank to disable comparison mode.</p>
           </div>
         </div>
-
-        <div class="grid-2" style="margin-top: 1rem; align-items: center;">
-          <div class="toggle-wrap" style="display: flex; align-items: center; gap: 0.5rem;">
-            <input type="checkbox" id="mockToggle" aria-label="Use Mock Generation" />
-            <label for="mockToggle" style="margin: 0; cursor: pointer;">Use Mock Model (Bypass Ollama)</label>
+        <div style="margin-top: 1rem;">
+          <label for="temperature">Temperature</label>
+          <div class="range-wrap">
+            <input id="temperature" type="range" min="0" max="1" step="0.1" value="0.3" />
+            <strong id="tempReadout">0.3</strong>
           </div>
         </div>
 
@@ -79,61 +83,69 @@
 
         <div class="row actions">
           <button id="askBtn" class="btn btn-primary" type="button">Generate Answer</button>
-          <button id="clearConversationBtn" class="btn btn-outline" type="button">Clear All</button>
+          <button id="clearConversationBtn" class="btn btn-outline" type="button">Clear Output</button>
           <span id="modeBadge" class="mode-badge">Mode: Hybrid</span>
         </div>
       </section>
 
       <aside class="panel panel-radar reveal stagger-2">
         <div class="panel-head">
-          <h2>Live Radar</h2>
-          <span class="status-chip status-idle">Passive</span>
+          <h2>Mode Comparison</h2>
         </div>
-        <div class="radar-grid">
+
+        <div class="radar-grid compare-grid">
           <article>
-            <h3>Timetable</h3>
-            <p id="timetableSignal">No live fetch yet. Connect this panel to `fetch_hkbu_updates()`.</p>
+            <h3 id="primaryModeTitle">Primary mode</h3>
+            <p id="primaryModeSnippet">Answer preview for the selected mode appears here.</p>
           </article>
           <article>
-            <h3>Campus News</h3>
-            <p id="newsSignal">Awaiting source stream. Keep this card for Playwright snapshots.</p>
+            <h3 id="comparisonModeTitle">Comparison mode</h3>
+            <p id="comparisonModeSnippet">Answer preview for the comparison mode appears here.</p>
           </article>
         </div>
 
-        <h2 class="metrics-title">Quality Snapshot</h2>
-        <div class="metric-row">
-          <span>BLEU</span>
-          <progress id="bleuBar" max="1" value="0"></progress>
-          <strong id="bleuValue">0.00</strong>
+        <div class="radar-grid compare-summary-grid">
+          <article>
+            <h3>AI comparison summary</h3>
+            <p id="compareSummary">AI will summarize the difference between the two mode outputs here.</p>
+          </article>
         </div>
-        <div class="metric-row">
-          <span>ROUGE-L</span>
-          <progress id="rougeBar" max="1" value="0"></progress>
-          <strong id="rougeValue">0.00</strong>
+
+        <h2 class="metrics-title">Basic evaluation</h2>
+        <div class="radar-grid evaluation-grid">
+          <article>
+            <h3>Quality comparison</h3>
+            <p id="qualityComparison">Comparison metrics appear here after generation.</p>
+          </article>
+          <article>
+            <h3>Token usage comparison</h3>
+            <p id="tokenComparison">Token usage metrics appear here after generation.</p>
+          </article>
         </div>
+
+        <div class="radar-grid compare-summary-grid">
+          <article>
+            <h3>Overall better mode in Evaluation</h3>
+            <p id="overallComparison">Overall comparison summary appears here after generation.</p>
+          </article>
+        </div>
+
       </aside>
 
       <section class="panel panel-output reveal stagger-3">
         <div class="panel-head output-head">
           <h2>Assistant Output</h2>
-          <div style="display: flex; gap: 0.5rem;">
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <span class="status-chip" id="conversationStatus">Live</span>
             <div id="modelPill" class="token-pill">Model: None</div>
             <div id="tokenPill" class="token-pill">Tokens: 0</div>
           </div>
         </div>
-        <article id="answerBox" class="answer-box">Your answer will appear here.</article>
+        <div id="conversationPane" class="conversation-pane answer-box">
+          <p class="conversation-empty">Start by asking a question to see the output here.</p>
+        </div>
         <h3>Citations</h3>
         <ol id="citationList" class="citation-list"></ol>
-      </section>
-
-      <section class="panel panel-conversation reveal stagger-4">
-        <div class="panel-head">
-          <h2>Conversation</h2>
-          <span class="status-chip" id="conversationStatus">Live</span>
-        </div>
-        <div id="conversationPane" class="conversation-pane">
-          <p class="conversation-empty">Start by asking a question to see your conversation history here.</p>
-        </div>
       </section>
     </main>
 
