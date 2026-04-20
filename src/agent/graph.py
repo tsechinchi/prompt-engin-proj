@@ -199,11 +199,15 @@ def _assemble_node(state: AgentState) -> AgentState:
         "Use formatting like bolding and bulleted lists to make the output user-friendly.",
         "Format the response into distinct paragraphs with blank lines between them.",
         "Base your answer strictly on the provided context if available.",
-        "If the user is asking something not related to the RAG document, output ONLY 'The provider context cannot find in the uploaded document'. Do not include any other text.",
+        "If the user is asking something not related to the RAG document, output ONLY 'The provider context cannot find in the uploaded document'. Do not include any other text, headings, bullet lists, or follow-up suggestions.",
         "When referring to names of people, ALWAYS use their full names exactly as they appear in the provided context snippets (e.g., 'Dr. Shichao Ma' instead of just 'Dr. Shichao').",
         f"You MUST directly answer the user's core question: '{state['query']}'. Do not provide a generic summary of the text.",
-        "At the very end of your response, you MUST provide an 'Actionable next step' with a specific follow-up question the user could ask."
     ])
+
+    if not state.get("retrieval_mismatch", False):
+        constraints.append(
+            "At the very end of your response, you MUST provide an 'Actionable next step' with a specific follow-up question the user could ask."
+        )
     
     review_feedback = state.get("review_feedback", "").strip()
     if review_feedback:
