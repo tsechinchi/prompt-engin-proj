@@ -689,7 +689,8 @@ async function parseUploadedFiles(fileList) {
 
 fileUpload.addEventListener("change", async () => {
   setStatus("Parsing uploads...", "busy");
-  uploadedDocs = await parseUploadedFiles(fileUpload.files);
+  const newDocs = await parseUploadedFiles(fileUpload.files);
+  uploadedDocs = [...uploadedDocs, ...newDocs];
   uploadList.innerHTML = "";
   for (const file of uploadedDocs) {
     const li = document.createElement("li");
