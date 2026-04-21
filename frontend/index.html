@@ -54,9 +54,8 @@
               <option value="bm25">BM25</option>
               <option value="vector">Vector</option>
               <option value="hybrid" selected>Hybrid (BM25 + Vector)</option>
-              <option value="thinking">🧠 Thinking</option>
             </select>
-            <p id="modeExplanation" class="hint" style="margin-top: 0.5rem; font-size: 0.85em;"></p>
+            <p id="modeExplanation" class="hint" style="margin-top: 0.5rem; font-size: 0.85em;">Hybrid: Combine BM25 and Vector retrieval so the system uses both exact keyword matches and semantic relevance.</p>
           </div>
           <div>
             <label for="compareModeSelect">Compare mode</label>
@@ -66,10 +65,15 @@
               <option value="bm25">BM25</option>
               <option value="vector">Vector</option>
               <option value="hybrid">Hybrid (BM25 + Vector)</option>
-              <option value="thinking">🧠 Thinking</option>
             </select>
-            <p class="hint" style="margin-top: 0.5rem; font-size: 0.85em;">Leave blank to disable comparison mode.</p>
+            <p id="compareModeExplanation" class="hint" style="margin-top: 0.5rem; font-size: 0.85em;">Leave blank to disable comparison mode.</p>
           </div>
+        </div>
+        <div style="margin-top: 1rem; display: flex; gap: 1rem; align-items: flex-start; flex-wrap: wrap;">
+          <label for="thinkingModeCheckbox" style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+            <input id="thinkingModeCheckbox" type="checkbox" />
+            Thinking mode
+          </label>
         </div>
         <div style="margin-top: 1rem;">
           <label for="temperature">Temperature</label>
@@ -79,7 +83,7 @@
           </div>
         </div>
 
-        <label for="fileUpload" style="margin-top: 1rem; display: block;">Upload docs (PDF, DOCX, PPTX)</label>
+        <label for="fileUpload" style="margin-top: 1rem; display: block;">Upload docs (PDF, DOCX, PPTX) — select one or more files</label>
         <input id="fileUpload" type="file" multiple accept=".pdf,.docx,.pptx" />
         <ul id="uploadList" class="upload-log"></ul>
 
