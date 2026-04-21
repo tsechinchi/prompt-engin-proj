@@ -1,7 +1,9 @@
 const queryInput = document.getElementById("queryInput");
 const modeSelect = document.getElementById("modeSelect");
 const compareModeSelect = document.getElementById("compareModeSelect");
+const thinkingModeCheckbox = document.getElementById("thinkingModeCheckbox");
 const modeExplanation = document.getElementById("modeExplanation");
+const compareModeExplanation = document.getElementById("compareModeExplanation");
 const temperature = document.getElementById("temperature");
 const fileUpload = document.getElementById("fileUpload");
 const uploadList = document.getElementById("uploadList");
@@ -612,18 +614,29 @@ function setStatus(text, mode = "ready") {
 }
 
 const MODE_EXPLANATIONS = {
-  "baseline": "Baseline (no RAG): Generates an answer strictly from the model's internal base knowledge. Does not use retrieved documents.",
-  "bm25": "BM25: Retrieves documents based strictly on keyword matching and frequency. Ideal for finding exact queries like names or acronyms.",
-  "vector": "Vector: Retrieves documents based on semantic meaning using embeddings. Ideal for finding answers to conceptually phrased queries.",
-  "hybrid": "Hybrid: Blends BM25 for precise keyword hits and Vector search for semantic understanding. It mixes the two for robust retrieval.",
-  "thinking": "Thinking: AI reasons step by step with full transparency. Uses hybrid retrieval and streams the thinking process in real-time."
+  "baseline": "Baseline (no RAG): Generate answers from the model alone without retrieving any external documents.",
+  "bm25": "BM25: Retrieve source documents using exact keyword matching and term frequency for precise query hits.",
+  "vector": "Vector: Retrieve source documents by semantic similarity with embeddings, useful for concept-based queries.",
+  "hybrid": "Hybrid: Combine BM25 and Vector retrieval so the system uses both exact keyword matches and semantic relevance.",
+};
+
+const COMPARE_MODE_EXPLANATIONS = {
+  ...MODE_EXPLANATIONS,
 };
 
 function refreshModeBadge() {
   const modeLabel = modeSelect.options[modeSelect.selectedIndex].text;
-  modeBadge.textContent = `Mode: ${modeLabel}`;
+  const modeValue = modeSelect.value;
+  const thinkingMode = thinkingModeCheckbox?.checked;
+  modeBadge.textContent = `Mode: ${modeLabel}${thinkingMode ? " + Thinking" : ""}`;
   if (modeExplanation) {
-    modeExplanation.textContent = MODE_EXPLANATIONS[modeSelect.value] || "";
+    modeExplanation.textContent = MODE_EXPLANATIONS[modeValue] || "";
+  }
+  if (compareModeExplanation) {
+    const compareValue = compareModeSelect.value;
+    compareModeExplanation.textContent = compareValue
+      ? COMPARE_MODE_EXPLANATIONS[compareValue] || ""
+      : "Leave blank to disable comparison mode. Select a mode to run a second answer for side-by-side comparison.";
   }
 }
 
@@ -702,6 +715,10 @@ fileUpload.addEventListener("change", async () => {
 });
 
 modeSelect.addEventListener("change", refreshModeBadge);
+modeSelect.addEventListener("input", refreshModeBadge);
+compareModeSelect.addEventListener("change", refreshModeBadge);
+compareModeSelect.addEventListener("input", refreshModeBadge);
+thinkingModeCheckbox?.addEventListener("change", refreshModeBadge);
 temperature.addEventListener("input", refreshTempReadout);
 
 if (clearConversationBtn) {
@@ -760,20 +777,13 @@ askBtn.addEventListener("click", async () => {
   setStatus("Ollama Generating...", "busy");
   askBtn.disabled = true;
 
-  if (modeSelect.value === "thinking") {
-    setStatus("🧠 Deep Thinking...", "busy");
-    try {
-      await requestThinkingAnswer(query);
-    } finally {
-      askBtn.disabled = false;
-    }
-    return;
-  }
-
-    try {
+  try {
     const primaryMode = modeSelect.value;
     const compareMode = compareModeSelect.value;
-    const resultPromise = requestGraphAnswer(query, primaryMode);
+    const thinkingMode = thinkingModeCheckbox?.checked;
+    const resultPromise = thinkingMode
+      ? requestThinkingAnswer(query, primaryMode)
+      : requestGraphAnswer(query, primaryMode);
     const comparisonPromise = compareMode && compareMode !== primaryMode
       ? requestGraphAnswer(query, compareMode)
       : Promise.resolve(null);
@@ -781,7 +791,9 @@ askBtn.addEventListener("click", async () => {
     const [result, comparisonResult] = await Promise.all([resultPromise, comparisonPromise]);
     const creativityPenalty = Number(temperature.value) * 0.06;
 
-    updateLastAssistantMessage(result.text);
+    if (!thinkingMode) {
+      updateLastAssistantMessage(result.text);
+    }
     renderCitations(result.citations);
 
     modelPill.textContent = `Model: ${result.modelUsed === "ollama" ? "Ollama" : String(result.modelUsed || "unknown")}`;
@@ -849,7 +861,7 @@ askBtn.addEventListener("click", async () => {
   }
 });
 
-async function requestThinkingAnswer(query) {
+async function requestThinkingAnswer(query, mode = "hybrid") {
   const thinkingSteps = [];
   let fullAnswer = "";
   let finalMeta = null;
@@ -876,7 +888,7 @@ async function requestThinkingAnswer(query) {
     const response = await fetch(`${API_BASE}/api/ask/stream`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(buildApiPayload(query)),
+      body: JSON.stringify(buildApiPayload(query, mode)),
     });
 
     if (!response.ok) {
@@ -947,10 +959,20 @@ async function requestThinkingAnswer(query) {
     }
 
     setConversationStatus("Response received");
-    setStatus("Done (Thinking Mode)");
+    setStatus("Done");
+
+    return {
+      text: fullAnswer,
+      citations: finalMeta?.citations || [],
+      bleu: Number(finalMeta?.quality?.bleu ?? 0.5),
+      rouge: Number(finalMeta?.quality?.rouge_l ?? 0.55),
+      tokenTotal: Number(finalMeta?.tokens?.total_tokens ?? (tokensApprox(query) + tokensApprox(fullAnswer))),
+      status: String(finalMeta?.status || "done"),
+      modelUsed: String(finalMeta?.model_used || "unknown"),
+    };
 
   } catch (_error) {
-    console.error("[Thinking Mode Error]", _error);
+    console.error("[Thinking Error]", _error);
     const fallback = simulateAnswer(query, "hybrid");
     updateLastAssistantMessage(fallback.text);
     renderCitations(fallback.citations);
@@ -965,6 +987,16 @@ async function requestThinkingAnswer(query) {
 
     setConversationStatus("Offline demo response");
     setStatus("API offline - using local demo");
+
+    return {
+      text: fallback.text,
+      citations: fallback.citations,
+      bleu: Number(fallback.bleu ?? 0.5),
+      rouge: Number(fallback.rouge ?? 0.55),
+      tokenTotal: Number(outputTokens + inputTokens),
+      status: "offline",
+      modelUsed: "offline-demo",
+    };
   }
 }
 
@@ -972,6 +1004,9 @@ loadDemoBtn.addEventListener("click", () => {
   queryInput.value = "When is the add/drop deadline for CS101?";
   modeSelect.value = "hybrid";
   compareModeSelect.value = "baseline";
+  if (thinkingModeCheckbox) {
+    thinkingModeCheckbox.checked = false;
+  }
   temperature.value = "0.3";
   refreshModeBadge();
   refreshTempReadout();
