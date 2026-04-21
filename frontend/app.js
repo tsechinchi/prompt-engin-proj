@@ -495,7 +495,8 @@ const MODE_EXPLANATIONS = {
   "baseline": "Baseline (no RAG): Generates an answer strictly from the model's internal base knowledge. Does not use retrieved documents.",
   "bm25": "BM25: Retrieves documents based strictly on keyword matching and frequency. Ideal for finding exact queries like names or acronyms.",
   "vector": "Vector: Retrieves documents based on semantic meaning using embeddings. Ideal for finding answers to conceptually phrased queries.",
-  "hybrid": "Hybrid: Blends BM25 for precise keyword hits and Vector search for semantic understanding. It mixes the two for robust retrieval."
+  "hybrid": "Hybrid: Blends BM25 for precise keyword hits and Vector search for semantic understanding. It mixes the two for robust retrieval.",
+  "thinking": "Thinking: AI reasons step by step with full transparency. Uses hybrid retrieval and streams the thinking process in real-time."
 };
 
 function refreshModeBadge() {
@@ -627,6 +628,13 @@ askBtn.addEventListener("click", async () => {
   setStatus(isMock ? "Mock Generating..." : "Ollama Generating...", "busy");
   askBtn.disabled = true;
 
+  if (modeSelect.value === "thinking") {
+    setStatus("🧠 Deep Thinking...", "busy");
+    await requestThinkingAnswer(query);
+    askBtn.disabled = false;
+    return;
+  }
+
     try {
     const result = await requestGraphAnswer(query);
     const creativityPenalty = Number(temperature.value) * 0.06;
@@ -682,6 +690,135 @@ askBtn.addEventListener("click", async () => {
     askBtn.disabled = false;
   }
 });
+
+async function requestThinkingAnswer(query) {
+  const thinkingSteps = [];
+  let fullAnswer = "";
+  let finalMeta = null;
+
+  function buildLiveMessage() {
+    let msg = "🧠 **Deep Thinking...**\n\n";
+    for (const step of thinkingSteps) {
+      msg += `✅ ${step}\n\n`;
+    }
+    if (!fullAnswer) {
+      msg += "⏳ *Processing...*";
+    } else {
+      msg += "---\n\n" + fullAnswer;
+    }
+    return msg;
+  }
+
+  function buildFinalMessage() {
+    const stepsHtml = thinkingSteps.map(s => `✅ ${s}`).join("<br>");
+    return `<details>\n<summary>🧠 <strong>Thinking Process</strong> (${thinkingSteps.length} steps)</summary>\n<div class="thinking-steps-list">\n${stepsHtml}\n</div>\n</details>\n\n${fullAnswer}`;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}/api/ask/stream`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(buildApiPayload(query)),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed (${response.status})`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      const parts = buffer.split("\n\n");
+      buffer = parts.pop();
+
+      for (const part of parts) {
+        if (!part.trim()) continue;
+
+        let eventType = "";
+        let eventData = "";
+
+        for (const line of part.split("\n")) {
+          if (line.startsWith("event: ")) eventType = line.slice(7);
+          else if (line.startsWith("data: ")) eventData += line.slice(6);
+        }
+
+        switch (eventType) {
+          case "thinking_step":
+            thinkingSteps.push(eventData.replace(/\\n/g, "\n"));
+            updateLastAssistantMessage(buildLiveMessage());
+            break;
+          case "token":
+            fullAnswer += eventData.replace(/\\n/g, "\n");
+            updateLastAssistantMessage(buildLiveMessage());
+            answerBox.innerHTML = window.marked ? marked.parse(fullAnswer) : fullAnswer;
+            break;
+          case "done":
+            try { finalMeta = JSON.parse(eventData.replace(/\\n/g, "\n")); } catch (_e) { /* ignore */ }
+            break;
+          case "error":
+            throw new Error(eventData);
+        }
+      }
+    }
+
+    // Finalize
+    const finalMsg = buildFinalMessage();
+    updateLastAssistantMessage(finalMsg);
+    answerBox.innerHTML = window.marked ? marked.parse(fullAnswer) : fullAnswer;
+
+    if (finalMeta) {
+      renderCitations(finalMeta.citations || []);
+
+      const modelStr = finalMeta.model_used === "ollama" ? "Ollama" : "Mock (Bypass/Fallback)";
+      modelPill.textContent = `Model: ${modelStr}`;
+      if (finalMeta.model_used === "ollama") {
+        modelPill.style.color = "var(--green-4)";
+        modelPill.style.borderColor = "var(--green-4)";
+      } else {
+        modelPill.style.color = "inherit";
+        modelPill.style.borderColor = "inherit";
+      }
+
+      const totalTokens = finalMeta.tokens?.total_tokens || (tokensApprox(query) + tokensApprox(fullAnswer));
+      tokenPill.textContent = `Tokens: ${totalTokens}`;
+
+      const creativityPenalty = Number(temperature.value) * 0.06;
+      setMetric((finalMeta.quality?.bleu || 0.5) - creativityPenalty, bleuBar, bleuValue);
+      setMetric((finalMeta.quality?.rouge_l || 0.55) - creativityPenalty / 2, rougeBar, rougeValue);
+    }
+
+    updateLiveRadar(query, []);
+    setConversationStatus("Response received");
+    setStatus("Done (Thinking Mode)");
+
+  } catch (_error) {
+    const fallback = simulateAnswer(query, "hybrid");
+    updateLastAssistantMessage(fallback.text);
+    answerBox.innerHTML = window.marked ? marked.parse(fallback.text) : fallback.text;
+    renderCitations(fallback.citations);
+
+    modelPill.textContent = "Model: Offline Demo";
+    modelPill.style.color = "inherit";
+    modelPill.style.borderColor = "inherit";
+
+    const outputTokens = tokensApprox(fallback.text);
+    const inputTokens = tokensApprox(query);
+    tokenPill.textContent = `Tokens: ${inputTokens + outputTokens}`;
+
+    setMetric(fallback.bleu, bleuBar, bleuValue);
+    setMetric(fallback.rouge, rougeBar, rougeValue);
+    updateLiveRadar(query, []);
+    setConversationStatus("Offline demo response");
+    setStatus("API offline - using local demo");
+  }
+}
 
 loadDemoBtn.addEventListener("click", () => {
   queryInput.value = "When is the add/drop deadline for CS101?";

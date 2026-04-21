@@ -4,19 +4,24 @@ from __future__ import annotations
 
 from functools import lru_cache
 from hashlib import sha1
+import json as _json
 from pathlib import Path
 import re
+import time
 from typing import Literal
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from src.agent import build_graph
 from src.evaluation.token_tracker import track_usage
-from src.generation import generate_raw
+from src.generation import generate_raw, generate_stream
 from src.ingestion import chunk_documents, load_documents
 from src.memory import ConversationBuffer
+from src.prompt import TEMPLATES, assemble_prompt
+from src.retrieval import BM25Retriever, VectorRetriever, fuse_scores
 
 
 class UploadedDocPayload(BaseModel):
@@ -30,7 +35,7 @@ class AskRequest(BaseModel):
     """Request schema for graph-backed answer generation."""
 
     query: str
-    mode: Literal["baseline", "bm25", "vector", "hybrid"] = "hybrid"
+    mode: Literal["baseline", "bm25", "vector", "hybrid", "thinking"] = "hybrid"
     temperature: float = 0.3
     top_k: int = 5
     model: str = "gemma3:4b"
@@ -140,7 +145,149 @@ def create_app() -> FastAPI:
             model_used=generation_info["model_used"],
         )
 
+    # ── SSE streaming endpoint for Thinking Mode ──────────────────────
+
+    @app.post("/api/ask/stream")
+    def ask_stream(payload: AskRequest) -> StreamingResponse:
+        """Server-Sent Events endpoint for Thinking Mode streaming."""
+
+        def _event_generator():
+            try:
+                # Step 1 — Analyse question
+                yield _sse("thinking_step", "Analyzing your question...")
+                time.sleep(0.05)
+
+                # Step 2 — Prepare retrieval corpus
+                uploaded_chunks = _uploaded_chunk_records(payload.uploaded_docs)
+                use_mode = "hybrid"  # thinking always uses hybrid retrieval
+                chunk_records = _select_chunk_records(
+                    mode=use_mode,
+                    uploaded_chunk_records=uploaded_chunks,
+                    use_mock_corpus=payload.use_mock_corpus,
+                )
+
+                yield _sse("thinking_step", f"Loaded {len(chunk_records)} document chunks")
+                time.sleep(0.05)
+
+                # Step 3 — Retrieve & fuse
+                documents = [str(r.get("text", "")) for r in chunk_records]
+                top_k = max(payload.top_k, 1)
+                bm25_hits: list[tuple[str, float]] = []
+                vector_hits: list[tuple[str, float]] = []
+
+                if documents:
+                    bm25_ret = BM25Retriever()
+                    bm25_ret.build(documents)
+                    bm25_hits = bm25_ret.query(payload.query, top_k=top_k)
+
+                    vector_ret = VectorRetriever()
+                    vector_ret.build(documents)
+                    vector_hits = vector_ret.query(payload.query, top_k=top_k)
+
+                fused = fuse_scores(bm25_hits, vector_hits, bm25_weight=0.4, vector_weight=0.6)
+                snippets = [text for text, _score in fused[:top_k]]
+
+                if snippets:
+                    yield _sse("thinking_step", f"Found {len(snippets)} relevant evidence snippets")
+                else:
+                    yield _sse("thinking_step", "No document context available — using general knowledge")
+                time.sleep(0.05)
+
+                # Step 4 — Assemble prompt
+                template = TEMPLATES.get("thinking", TEMPLATES["hybrid"])
+                history_buffer = ConversationBuffer(max_messages=12, max_tokens=1200)
+                history_buffer.extend(payload.history)
+
+                constraints = [
+                    "Think step by step. Show your reasoning clearly before giving a final answer.",
+                    "You MUST format your entire response in valid Markdown.",
+                    "Do NOT repeat or echo the user's question in your response.",
+                    "Use Markdown headers (e.g., ### Reasoning, ### Final Answer) to separate sections.",
+                    "Base your answer strictly on the provided context if available.",
+                    f"You MUST directly answer the user's core question: '{payload.query}'.",
+                    "At the very end, provide an 'Actionable next step' with a specific follow-up question.",
+                ]
+
+                prompt = assemble_prompt(
+                    role=template.get("role", "Expert HKBU study companion AI"),
+                    task=f"{template.get('task', '')} Question: {payload.query}",
+                    context_snippets=snippets,
+                    constraints=constraints,
+                    output_format=template.get("output_format", ""),
+                    conversation_history=history_buffer.messages,
+                )
+
+                yield _sse("thinking_step", "Prompt assembled — generating answer...")
+                time.sleep(0.05)
+
+                # Step 5 — Generate (streaming or mock)
+                full_text = ""
+                model_used = "unknown"
+
+                if payload.use_mock_generation:
+                    model_used = "mock"
+                    mock_answer = _mock_generate_from_prompt(prompt, payload.query)
+                    full_text = mock_answer
+                    yield _sse("token", mock_answer)
+                else:
+                    model_used = "ollama"
+                    try:
+                        for chunk in generate_stream(
+                            prompt,
+                            model=payload.model,
+                            temperature=payload.temperature,
+                            num_predict=1000,
+                        ):
+                            if chunk["type"] == "token":
+                                full_text += chunk["content"]
+                                yield _sse("token", chunk["content"])
+                            elif chunk["type"] == "error":
+                                model_used = "mock_fallback"
+                                mock_answer = _mock_generate_from_prompt(prompt, payload.query)
+                                full_text = mock_answer
+                                yield _sse("token", mock_answer)
+                                break
+                    except Exception:
+                        model_used = "mock_fallback"
+                        mock_answer = _mock_generate_from_prompt(prompt, payload.query)
+                        full_text = mock_answer
+                        yield _sse("token", mock_answer)
+
+                # Step 6 — Final metadata
+                if not full_text.strip():
+                    full_text = "[Model returned an empty response]"
+
+                citations = _build_citations(snippets)
+                quality = _estimate_quality(payload.query, snippets, "approved")
+                usage = track_usage(
+                    prompt_tokens=max(1, _token_count(payload.query)),
+                    completion_tokens=max(1, _token_count(full_text)),
+                )
+
+                yield _sse("done", _json.dumps({
+                    "citations": citations,
+                    "quality": quality,
+                    "tokens": usage,
+                    "model_used": model_used,
+                    "status": "approved",
+                }))
+
+            except Exception as exc:
+                yield _sse("error", repr(exc))
+
+        return StreamingResponse(
+            _event_generator(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+
     return app
+
+
+def _sse(event_type: str, data: str) -> str:
+    """Format a single Server-Sent Event frame."""
+    safe_data = data.replace("\n", "\\n")
+    return f"event: {event_type}\ndata: {safe_data}\n\n"
 
 
 app = create_app()
@@ -152,6 +299,8 @@ def _mode_weights(mode: str) -> tuple[float, float]:
     if mode == "vector":
         return 0.0, 1.0
     if mode == "baseline":
+        return 0.4, 0.6
+    if mode == "thinking":
         return 0.4, 0.6
     return 0.4, 0.6
 
