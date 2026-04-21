@@ -43,6 +43,7 @@ class AskRequest(BaseModel):
     uploaded_docs: list[UploadedDocPayload] = Field(default_factory=list)
     history: list[dict[str, str]] = Field(default_factory=list)
     use_mock_corpus: bool = False
+    use_mock_generation: bool = False
 
 
 class AskResponse(BaseModel):

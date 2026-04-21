@@ -762,8 +762,11 @@ askBtn.addEventListener("click", async () => {
 
   if (modeSelect.value === "thinking") {
     setStatus("🧠 Deep Thinking...", "busy");
-    await requestThinkingAnswer(query);
-    askBtn.disabled = false;
+    try {
+      await requestThinkingAnswer(query);
+    } finally {
+      askBtn.disabled = false;
+    }
     return;
   }
 
@@ -912,7 +915,6 @@ async function requestThinkingAnswer(query) {
           case "token":
             fullAnswer += eventData.replace(/\\n/g, "\n");
             updateLastAssistantMessage(buildLiveMessage());
-            answerBox.innerHTML = window.marked ? marked.parse(fullAnswer) : fullAnswer;
             break;
           case "done":
             try { finalMeta = JSON.parse(eventData.replace(/\\n/g, "\n")); } catch (_e) { /* ignore */ }
@@ -926,7 +928,6 @@ async function requestThinkingAnswer(query) {
     // Finalize
     const finalMsg = buildFinalMessage();
     updateLastAssistantMessage(finalMsg);
-    answerBox.innerHTML = window.marked ? marked.parse(fullAnswer) : fullAnswer;
 
     if (finalMeta) {
       renderCitations(finalMeta.citations || []);
@@ -943,20 +944,15 @@ async function requestThinkingAnswer(query) {
 
       const totalTokens = finalMeta.tokens?.total_tokens || (tokensApprox(query) + tokensApprox(fullAnswer));
       tokenPill.textContent = `Tokens: ${totalTokens}`;
-
-      const creativityPenalty = Number(temperature.value) * 0.06;
-      setMetric((finalMeta.quality?.bleu || 0.5) - creativityPenalty, bleuBar, bleuValue);
-      setMetric((finalMeta.quality?.rouge_l || 0.55) - creativityPenalty / 2, rougeBar, rougeValue);
     }
 
-    updateLiveRadar(query, []);
     setConversationStatus("Response received");
     setStatus("Done (Thinking Mode)");
 
   } catch (_error) {
+    console.error("[Thinking Mode Error]", _error);
     const fallback = simulateAnswer(query, "hybrid");
     updateLastAssistantMessage(fallback.text);
-    answerBox.innerHTML = window.marked ? marked.parse(fallback.text) : fallback.text;
     renderCitations(fallback.citations);
 
     modelPill.textContent = "Model: Offline Demo";
@@ -967,9 +963,6 @@ async function requestThinkingAnswer(query) {
     const inputTokens = tokensApprox(query);
     tokenPill.textContent = `Tokens: ${inputTokens + outputTokens}`;
 
-    setMetric(fallback.bleu, bleuBar, bleuValue);
-    setMetric(fallback.rouge, rougeBar, rougeValue);
-    updateLiveRadar(query, []);
     setConversationStatus("Offline demo response");
     setStatus("API offline - using local demo");
   }
