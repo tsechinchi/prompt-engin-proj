@@ -92,7 +92,6 @@ def create_app() -> FastAPI:
         generation_info = {"model_used": "unknown"}
         graph = build_graph(
             generate_fn=_make_generate_fn(payload, generation_info),
-            hitl_fn=lambda _text: {"action": "approve", "feedback": ""},
         )
 
         uploaded_chunk_records = _uploaded_chunk_records(payload.uploaded_docs)
@@ -122,12 +121,10 @@ def create_app() -> FastAPI:
                 "temperature": max(payload.temperature, 0.0),
                 "model": payload.model,
                 "num_predict": max(payload.max_tokens, 1),
-                "require_approval": False,
                 "bm25_weight": bm25_weight,
                 "vector_weight": vector_weight,
                 "abstain_on_mismatch": abstain_on_mismatch,
                 "max_retrieval_retries": 1,
-                "max_regenerations": 0,
             }
         )
 

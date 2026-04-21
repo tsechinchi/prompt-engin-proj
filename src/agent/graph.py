@@ -12,8 +12,6 @@ from src.generation import generate_raw
 from src.prompt import TEMPLATES, assemble_prompt
 from src.retrieval import BM25Retriever, VectorRetriever, fuse_scores
 
-from .hitl import HITLDecision, review_output
-
 
 class AgentState(TypedDict, total=False):
     """State carried through the orchestration graph."""
@@ -52,17 +50,14 @@ class AgentState(TypedDict, total=False):
     status: str
     retrieval_mismatch: bool
     retrieval_mismatch_reason: str
-    hitl_decision: HITLDecision
     bm25_retriever: Any
     vector_retriever: Any
     generate_fn: Any
-    hitl_fn: Any
 
 
 def build_graph(
     *,
     generate_fn: Callable[..., str] = generate_raw,
-    hitl_fn: Callable[[str], HITLDecision] = review_output,
 ):
     """Construct and compile the LangGraph workflow graph."""
 
@@ -74,7 +69,6 @@ def build_graph(
     graph.add_node("generate", _make_generate_node(generate_fn))
     graph.add_node("postprocess", _postprocess_node)
     graph.add_node("retrieval_guard", _retrieval_guard_node)
-    graph.add_node("hitl", _make_hitl_node(hitl_fn))
     graph.add_node("output", _output_node)
 
     graph.add_edge(START, "retrieve")
@@ -87,15 +81,6 @@ def build_graph(
     graph.add_conditional_edges(
         "retrieval_guard",
         _route_after_retrieval_guard,
-        {
-            "assemble": "assemble",
-            "hitl": "hitl",
-            "output": "output",
-        },
-    )
-    graph.add_conditional_edges(
-        "hitl",
-        _route_after_hitl,
         {
             "assemble": "assemble",
             "output": "output",
@@ -254,7 +239,7 @@ def _postprocess_node(state: AgentState) -> AgentState:
 
 def _retrieval_guard_node(state: AgentState) -> AgentState:
     if not state.get("retrieval_mismatch", False):
-        return {"status": state.get("status", "")}
+        return {"status": state.get("status", "approved")}
 
     retry_count = state.get("retrieval_retry_count", 0)
     max_retries = state.get("max_retrieval_retries", 1)
@@ -274,68 +259,6 @@ def _retrieval_guard_node(state: AgentState) -> AgentState:
     return _abstain_for_retrieval_mismatch(state, reason)
 
 
-def _make_hitl_node(default_hitl_fn: Callable[[str], HITLDecision]):
-    def hitl_node(state: AgentState) -> AgentState:
-        generated_text = state.get("generated_text", "")
-        final_output = state.get("final_output", generated_text)
-
-        if state.get("status") == "abstained":
-            if not state.get("require_approval", True):
-                return {
-                    "hitl_decision": {"action": "reject", "feedback": "Auto-abstained without human review."},
-                    "status": "abstained",
-                    "final_output": final_output,
-                }
-
-            hitl_fn = state.get("hitl_fn", default_hitl_fn)
-            decision = hitl_fn(final_output)
-            return {
-                "hitl_decision": decision,
-                "status": "abstained",
-                "review_feedback": decision.get("feedback", ""),
-                "final_output": final_output,
-            }
-
-        if not state.get("require_approval", True):
-            return {
-                "hitl_decision": {"action": "approve", "feedback": ""},
-                "status": "approved",
-                "final_output": generated_text,
-            }
-
-        hitl_fn = state.get("hitl_fn", default_hitl_fn)
-        decision = hitl_fn(generated_text)
-        regenerate_count = state.get("regenerate_count", 0)
-
-        if decision["action"] == "regenerate":
-            regenerate_count += 1
-            if regenerate_count > state.get("max_regenerations", 1):
-                return {
-                    "hitl_decision": {"action": "reject", "feedback": "Maximum regenerations reached."},
-                    "status": "rejected",
-                    "final_output": generated_text,
-                    "review_feedback": "Maximum regenerations reached.",
-                    "regenerate_count": regenerate_count,
-                }
-            return {
-                "hitl_decision": decision,
-                "status": "regenerate",
-                "review_feedback": decision.get("feedback", ""),
-                "regenerate_count": regenerate_count,
-            }
-
-        status = "approved" if decision["action"] == "approve" else "rejected"
-        return {
-            "hitl_decision": decision,
-            "status": status,
-            "review_feedback": decision.get("feedback", ""),
-            "final_output": generated_text,
-            "regenerate_count": regenerate_count,
-        }
-
-    return hitl_node
-
-
 def _output_node(state: AgentState) -> AgentState:
     return {
         "final_output": state.get("final_output", state.get("generated_text", "")),
@@ -345,16 +268,6 @@ def _output_node(state: AgentState) -> AgentState:
 
 def _route_after_retrieval_guard(state: AgentState) -> str:
     if state.get("status") == "retrieval_retry":
-        return "assemble"
-    if state.get("status") == "abstained":
-        if state.get("require_approval", True):
-            return "hitl"
-        return "output"
-    return "hitl"
-
-
-def _route_after_hitl(state: AgentState) -> str:
-    if state.get("status") == "regenerate":
         return "assemble"
     return "output"
 
