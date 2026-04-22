@@ -415,6 +415,15 @@ def _make_generate_fn(payload: AskRequest, generation_info: dict):
     return _generate
 
 
+def _mock_generate_from_prompt(prompt: str, query: str) -> str:
+    """Generate a mock response when Ollama is unavailable."""
+    return (
+        "Based on the provided context, this is a mock response generated because "
+        "the Ollama service is currently unavailable. In a production setting, the actual "
+        "LLM would generate a more specific answer to your question."
+    )
+
+
 def _sanitize_abstention_answer(answer: str) -> str:
     marker = "The provider context cannot find in the uploaded document"
     if re.search(re.escape(marker), answer, flags=re.IGNORECASE):
