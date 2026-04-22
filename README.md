@@ -36,6 +36,14 @@ Optionally install the package in editable mode:
 pip install -e .
 ```
 
+## uv version
+py -m pip install uv
+uv venv
+.venv\Scripts\activate
+uv sync
+
+
+
 ### 3. Install and run Ollama
 
 This project uses `ollama` for local model generation. Make sure the Ollama runtime is installed and available on your PATH.
